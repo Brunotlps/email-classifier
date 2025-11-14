@@ -1,0 +1,15 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+pydantic==2.9.2 # Validação automática de dados
+pydantic-settings==2.5.2
+
+httpx==0.27.2 # Cliente HTTP moderno (melhor que requests, suporta async)
+
+openai==1.51.2
+
+python-dotenv==1.0.1
+
+python-multipart==0.0.12 # Pra aceitar upload de arquivos
+
+fastapi-cors==0.0.6
