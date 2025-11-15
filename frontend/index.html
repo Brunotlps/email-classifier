@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Classifier - IA para Classificação de Emails</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <rect width="40" height="40" rx="8" fill="url(#gradient)"/>
+                    <path d="M10 13L20 21L30 13M10 27V13C10 11.8954 10.8954 11 12 11H28C29.1046 11 30 11.8954 30 13V27C30 28.1046 29.1046 29 28 29H12C10.8954 29 10 28.1046 10 27Z" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
+                            <stop stop-color="#667eea"/>
+                            <stop offset="1" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1>Email Classifier</h1>
+            </div>
+            <p class="subtitle">Classificação inteligente com IA</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Input Section -->
+            <section class="input-section">
+                <div class="tabs">
+                    <button class="tab active" data-tab="text">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2 5C2 3.89543 2.89543 3 4 3H16C17.1046 3 18 3.89543 18 5V15C18 16.1046 17.1046 17 16 17H4C2.89543 17 2 16.1046 2 15V5ZM4 7V15H16V7L10 11L4 7ZM16 5H4L10 9L16 5Z"/>
+                        </svg>
+                        Escrever Email
+                    </button>
+                    <button class="tab" data-tab="file">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M6 2C5.44772 2 5 2.44772 5 3V17C5 17.5523 5.44772 18 6 18H14C14.5523 18 15 17.5523 15 17V7.41421C15 7.149 14.8946 6.89464 14.7071 6.70711L11.2929 3.29289C11.1054 3.10536 10.851 3 10.5858 3H6ZM10 4V7H13L10 4Z"/>
+                        </svg>
+                        Enviar Arquivo
+                    </button>
+                </div>
+
+                <!-- Text Input -->
+                <div class="tab-content active" id="text-tab">
+                    <div class="form-group">
+                        <label for="emailText">Conteúdo do Email</label>
+                        <textarea 
+                            id="emailText" 
+                            placeholder="Cole ou digite o conteúdo do email aqui...&#10;&#10;Exemplo:&#10;Olá, gostaria de agendar uma reunião para discutir uma parceria. Podemos marcar para a próxima semana?"
+                            rows="10"
+                        ></textarea>
+                        <div class="char-count">
+                            <span id="charCount">0</span> caracteres (mínimo: 10)
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="classifyTextBtn">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 3C6.13401 3 3 6.13401 3 10C3 13.866 6.13401 17 10 17C13.866 17 17 13.866 17 10C17 6.13401 13.866 3 10 3ZM13.7071 8.70711L9.70711 12.7071C9.31658 13.0976 8.68342 13.0976 8.29289 12.7071L6.29289 10.7071C5.90237 10.3166 5.90237 9.68342 6.29289 9.29289C6.68342 8.90237 7.31658 8.90237 7.70711 9.29289L9 10.5858L12.2929 7.29289C12.6834 6.90237 13.3166 6.90237 13.7071 7.29289C14.0976 7.68342 14.0976 8.31658 13.7071 8.70711Z"/>
+                        </svg>
+                        Classificar Email
+                    </button>
+                </div>
+
+                <!-- File Upload -->
+                <div class="tab-content" id="file-tab">
+                    <div class="upload-area" id="uploadArea">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <path d="M24 14V34M24 14L18 20M24 14L30 20M14 34H34M8 40H40C41.1046 40 42 39.1046 42 38V10C42 8.89543 41.1046 8 40 8H8C6.89543 8 6 8.89543 6 10V38C6 39.1046 6.89543 40 8 40Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <p class="upload-text">Arraste um arquivo ou clique para selecionar</p>
+                        <p class="upload-hint">Formatos aceitos: .txt, .eml, .pdf (máx. 5MB)</p>
+                        <input type="file" id="fileInput" accept=".txt,.eml,.pdf" hidden>
+                    </div>
+                    <div class="selected-file" id="selectedFile"></div>
+                    <button class="btn btn-primary" id="classifyFileBtn" disabled>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 3C6.13401 3 3 6.13401 3 10C3 13.866 6.13401 17 10 17C13.866 17 17 13.866 17 10C17 6.13401 13.866 3 10 3ZM13.7071 8.70711L9.70711 12.7071C9.31658 13.0976 8.68342 13.0976 8.29289 12.7071L6.29289 10.7071C5.90237 10.3166 5.90237 9.68342 6.29289 9.29289C6.68342 8.90237 7.31658 8.90237 7.70711 9.29289L9 10.5858L12.2929 7.29289C12.6834 6.90237 13.3166 6.90237 13.7071 7.29289C14.0976 7.68342 14.0976 8.31658 13.7071 8.70711Z"/>
+                        </svg>
+                        Classificar Arquivo
+                    </button>
+                </div>
+            </section>
+
+            <!-- Loading Spinner -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analisando email com IA...</p>
+            </div>
+
+            <!-- Result Section -->
+            <section class="result-section" id="resultSection">
+                <div class="result-card">
+                    <div class="result-header">
+                        <h2>Resultado da Classificação</h2>
+                        <span class="badge" id="classificationBadge"></span>
+                    </div>
+                    
+                    <div class="confidence-bar">
+                        <div class="confidence-label">
+                            <span>Confiança</span>
+                            <span id="confidenceValue">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+
+                    <div class="reasoning">
+                        <h3>Análise</h3>
+                        <p id="reasoningText"></p>
+                    </div>
+
+                    <!-- Suggestions -->
+                    <div class="suggestions" id="suggestionsContainer"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Desenvolvido por <a href="https://github.com/Brunotlps" target="_blank">Bruno Teixeira</a></p>
+            <p class="tech-stack">FastAPI + Ollama/OpenAI • Python 3.11</p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
