@@ -8,6 +8,8 @@ services:
       - "8001:8000"  # Porta 8001 em ambos
     volumes:
       - ./app:/app/app
+      - ./tests:/app/tests  
+      - ./pytest.ini:/app/pytest.ini
     environment:
       - ENVIRONMENT=development
       - DOCKER_CONTAINER=true

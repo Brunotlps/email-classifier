@@ -16,3 +16,7 @@ fastapi-cors==0.0.6
 
 pypdf2==3.0.1 # Para processar PDFs
 
+# Testes
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0

@@ -1,47 +1,63 @@
 # 📧 Email Classifier API
 
-Classificador de emails usando IA (Ollama/OpenAI) que determina se um email é produtivo ou improdutivo e gera sugestões de resposta.
+[![Tests](https://img.shields.io/badge/tests-44%20passing-brightgreen)](https://github.com/Brunotlps/email-classifier)
+[![Coverage](https://img.shields.io/badge/coverage-79%25-yellowgreen)](https://github.com/Brunotlps/email-classifier)
+[![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-009688)](https://fastapi.tiangolo.com/)
+
+Classificador inteligente de emails usando IA (Ollama/OpenAI) que identifica emails produtivos/improdutivos e gera sugestões de resposta contextualmente relevantes.
+
+---
+
+## 🎯 Funcionalidades
+
+- ✅ Classificação automática de emails (produtivo vs improdutivo)
+- ✅ Geração de sugestões de resposta com múltiplos tons (formal, cordial, casual, técnico)
+- ✅ Suporte para Ollama (dev) e OpenAI (prod)
+- ✅ Upload de arquivos (.txt, .eml, .pdf)
+- ✅ API REST totalmente documentada (Swagger)
+- ✅ 44 testes automatizados com 79% de cobertura
+
+---
 
 ## 🚀 Tecnologias
 
-- **Backend**: FastAPI + Python 3.11
-- **IA**: Ollama (desenvolvimento) / OpenAI (produção)
-- **Containerização**: Docker + Docker Compose
-- **Validação**: Pydantic
+**Backend**: FastAPI 0.115.0 + Python 3.11  
+**IA**: Ollama (qwen2.5:3b) / OpenAI (gpt-3.5-turbo)  
+**Testes**: pytest + pytest-asyncio (44 testes, 79% coverage)  
+**Deploy**: Docker + Docker Compose
 
-## 📋 Pré-requisitos
+---
 
-- Docker e Docker Compose
-- Ollama (para desenvolvimento local)
-- Python 3.11+ (para testes locais)
+## 🏗️ Decisões de Arquitetura
 
-## ⚙️ Configuração do Ollama (Linux)
+### Por que FastAPI?
+- **Performance**: Async nativo ideal para chamadas de IA (I/O-bound)
+- **Documentação automática**: Swagger gerado automaticamente
+- **Validação**: Pydantic integrado reduz bugs
 
-**IMPORTANTE**: Por padrão, o Ollama escuta apenas em `localhost`. Para funcionar com Docker, precisa aceitar conexões externas:
+### Por que Ollama + OpenAI?
+- **Ollama**: Desenvolvimento local sem custos, privado
+- **OpenAI**: Produção com qualidade superior
+- **Abstração**: Factory pattern permite trocar facilmente
 
-```bash
-# 1. Criar/editar arquivo de configuração do systemd
-sudo mkdir -p /etc/systemd/system/ollama.service.d
-sudo nano /etc/systemd/system/ollama.service.d/override.conf
-
-# 2. Adicionar estas linhas:
-[Service]
-Environment="OLLAMA_HOST=0.0.0.0:11434"
-
-# 3. Recarregar e reiniciar
-sudo systemctl daemon-reload
-sudo systemctl restart ollama
-
-# 4. Verificar se está escutando em todas as interfaces
-sudo systemctl status ollama | grep Listening
-# Deve mostrar: "Listening on [::]:11434"
-
-# 5. Testar conectividade
-curl http://localhost:11434/api/version
-curl http://172.21.0.1:11434/api/version  # IP do gateway Docker
+### Arquitetura em Camadas
+```
+API Layer (routes.py)
+    ↓
+Service Layer (classifier, response_generator)
+    ↓
+Utils Layer (ai_client, file_parser)
 ```
 
-## 🐳 Instalação e Execução
+**Benefícios**: Testabilidade, manutenibilidade, baixo acoplamento
+
+## 📦 Instalação Rápida
+
+### Pré-requisitos
+
+- Docker e Docker Compose
+- Ollama instalado e configurado
 
 ### 1. Instalar Ollama
 
@@ -52,142 +68,181 @@ curl -fsSL https://ollama.com/install.sh | sh
 # Baixar modelo
 ollama pull qwen2.5:3b
 
-# Configurar para aceitar conexões externas (ver seção acima)
+# Configurar para aceitar conexões externas (IMPORTANTE!)
+sudo systemctl edit ollama
 ```
 
-### 2. Configurar variáveis de ambiente
-
-Crie um arquivo `.env` na raiz do projeto:
-
-```env
-ENVIRONMENT=development
-AI_PROVIDER=ollama
-
-# OpenAI (opcional, para produção)
-OPENAI_API_KEY=sua-chave-aqui
-OPENAI_MODEL=gpt-3.5-turbo
-
-# Ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
-
-# Configurações de IA
-MAX_TOKENS=500
-TEMPERATURE=0.7
+Adicione no editor:
+```ini
+[Service]
+Environment="OLLAMA_HOST=0.0.0.0:11434"
 ```
 
-### 3. Subir a aplicação
+Salve e reinicie:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart ollama
+```
+
+### 2. Clonar e Configurar
 
 ```bash
-# Subir container
-docker-compose up --build
+git clone https://github.com/Brunotlps/email-classifier.git
+cd email-classifier
 
-# Ou em background
-docker-compose up -d
+# Criar .env (use .env.example como base)
+cp .env.example .env
 ```
 
-### 4. Acessar
+### 3. Executar
 
-- **API**: http://localhost:8001
-- **Documentação**: http://localhost:8001/docs
-- **Health Check**: http://localhost:8001/health
-- **Teste de IA**: http://localhost:8001/test-ai
+```bash
+# Subir aplicação
+docker-compose up -d
+
+# Verificar logs
+docker-compose logs -f
+```
+
+**Acesse**: http://localhost:8001/docs
+
+---
+
+## 📚 Uso da API
+
+### Classificar Email
+
+```bash
+curl -X POST http://localhost:8001/api/v1/classify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email_content": "Olá, gostaria de agendar uma reunião para discutir parceria."
+  }'
+```
+
+**Resposta:**
+```json
+{
+  "classification": "produtivo",
+  "confidence": 0.92,
+  "reasoning": "Email solicita reunião, demonstra interesse comercial",
+  "suggestions": [
+    {
+      "title": "Resposta cordial",
+      "content": "Olá! Agradeço o contato. Podemos agendar para...",
+      "tone": "cordial"
+    }
+  ]
+}
+```
+
+### Upload de Arquivo
+
+```bash
+curl -X POST http://localhost:8001/api/v1/classify-file \
+  -F "file=@email.txt"
+```
+
+---
 
 ## 🧪 Testes
 
-### Teste local (fora do Docker)
-
 ```bash
-# Ativar ambiente virtual
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate  # Windows
+# Rodar testes
+docker exec -it email_classifier_api pytest tests/ -v
 
-# Instalar dependências
-pip install -r requirements.txt
-
-# Rodar teste
-python test_ai.py
+# Com cobertura
+docker exec -it email_classifier_api pytest tests/ --cov=app --cov-report=term
 ```
 
-### Teste no container
+**Resultado**: 44 testes passando, 79% de cobertura ✅
 
-```bash
-# Verificar URL configurada
-docker exec email_classifier_api python -c "from app.config import settings; print(settings.ollama_base_url)"
+---
 
-# Testar conectividade Ollama
-docker exec email_classifier_api python -c "import httpx; print(httpx.get('http://172.21.0.1:11434/api/version', timeout=5.0).json())"
-
-# Testar endpoint
-curl http://localhost:8001/test-ai
-```
-
-## 📁 Estrutura do Projeto
+## 📁 Estrutura
 
 ```
 email-classifier/
 ├── app/
-│   ├── main.py              # FastAPI app
-│   ├── config.py            # Configurações
-│   ├── api/
-│   │   └── routes.py        # Endpoints
+│   ├── api/routes.py              # Endpoints REST
 │   ├── services/
-│   │   ├── classifier.py    # Lógica de classificação
-│   │   └── response_generator.py
-│   ├── models/
-│   │   └── schemas.py       # Modelos Pydantic
-│   └── utils/
-│       └── ai_client.py     # Cliente de IA (Ollama/OpenAI)
+│   │   ├── classifier.py          # Lógica de classificação
+│   │   └── response_generator.py  # Geração de sugestões
+│   ├── models/schemas.py          # Validação Pydantic
+│   ├── utils/
+│   │   ├── ai_client.py           # Cliente Ollama/OpenAI
+│   │   └── file_parser.py         # Parser multi-formato
+│   ├── config.py                  # Configurações
+│   └── main.py                    # FastAPI app
+├── tests/                         # 44 testes automatizados
 ├── docker-compose.yml
 ├── Dockerfile
-├── requirements.txt
-├── .env
-├── test_ai.py
-└── README.md
+└── requirements.txt
 ```
+
+---
 
 ## 🔧 Troubleshooting
 
-### Container não conecta ao Ollama
+### Erro de Conexão com Ollama
 
-**Erro**: `[Errno -2] Name or service not known`
-
-**Solução**: Verifique se o Ollama está configurado para aceitar conexões externas (ver seção "Configuração do Ollama")
-
-```bash
-# Verificar se está escutando em todas as interfaces
-sudo systemctl status ollama | grep Listening
+```
+Connection refused
 ```
 
-### Porta 8001 já em uso
+**Solução**: Verifique se o Ollama está configurado para aceitar conexões externas (ver passo 1 da instalação).
 
 ```bash
-# Ver o que está usando a porta
+# Verificar
+sudo systemctl status ollama | grep Listening
+# Deve mostrar: [::]:11434 ou 0.0.0.0:11434
+```
+
+### Porta 8001 em Uso
+
+```bash
+# Verificar processo
 sudo lsof -i :8001
 
-# Matar processo (substitua PID)
-kill -9 <PID>
+# Ou alterar porta no docker-compose.yml
+ports:
+  - "8002:8000"
 ```
 
-### Hot-reload não funciona
+---
 
-Verifique se os volumes estão corretos no `docker-compose.yml`:
+## 📊 Cobertura de Testes
 
-```yaml
-volumes:
-  - ./app:/app/app  # Sincroniza pasta local com container
-```
+| Componente | Cobertura |
+|------------|-----------|
+| Schemas | 100% ✅ |
+| Classifier | 98% ✅ |
+| Response Generator | 98% ✅ |
+| Main | 86% ✅ |
+| Config | 85% ✅ |
+| **Total** | **79%** ✅ |
 
-## 🚀 Próximos Passos
+---
 
-- [ ] Implementar serviço de classificação
-- [ ] Criar endpoint `/classify`
-- [ ] Adicionar geração de sugestões de resposta
-- [ ] Criar frontend
-- [ ] Adicionar testes unitários
-- [ ] Deploy em produção
+## 🎯 Próximos Passos
+
+1. ✅ **Backend completo** com testes
+2. 🔄 **Frontend** básico em desenvolvimento
+3. 📦 **Deploy** planejado (Vercel/Railway)
+
+---
+
+## 👤 Autor
+
+**Bruno Teixeira**  
+[![GitHub](https://img.shields.io/badge/GitHub-Brunotlps-181717?logo=github)](https://github.com/Brunotlps)
+
+---
 
 ## 📝 Licença
 
-Projeto desenvolvido para processo seletivo de estágio em Engenharia de Software.
+Projeto educacional desenvolvido para processo seletivo de estágio em Engenharia de Software.
+
+---
+
+**Desenvolvido utilizando FastAPI + Ollama**
