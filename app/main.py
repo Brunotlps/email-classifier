@@ -12,9 +12,12 @@ app = FastAPI(
 )
 
 # Configurações do CORS
+# Em produção, allowed_origins virá das variáveis de ambiente
+allowed_origins = settings.allowed_origins.split(",") if settings.allowed_origins else ["*"]
+
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["*"], # especificar domínios em prod
+  allow_origins=allowed_origins,
   allow_credentials=True,
   allow_methods=["*"],
   allow_headers=["*"],

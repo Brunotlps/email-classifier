@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # Configurações gerais
     environment: str = "development"
     
+    # CORS - domínios permitidos (separados por vírgula)
+    allowed_origins: str = "http://localhost:3000,http://localhost:5173"
+    
     # Provider de IA
     ai_provider: Literal["openai", "ollama"] = "ollama"
     

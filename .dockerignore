@@ -1,0 +1,39 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# Docs
+*.md
+docs/
+
+# Frontend (não precisa no backend)
+frontend/
+
+# Docker
+docker-compose.yml
+.dockerignore
+
+# Env
+.env
+.env.example
+
+# Outros
+test_files/
