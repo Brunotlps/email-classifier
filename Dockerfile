@@ -10,9 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ./app ./app
 
 # Railway define a porta via variável $PORT
-# Não usamos EXPOSE fixo aqui
 EXPOSE 8000
 
-# Comando que aceita porta variável
-# ${PORT:-8000} significa: use $PORT se existir, senão use 8000 (para rodar local)
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Usa shell form para interpretar a variável $PORT
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
