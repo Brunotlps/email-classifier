@@ -16,8 +16,107 @@ const selectedFile = document.getElementById('selectedFile');
 const classifyFileBtn = document.getElementById('classifyFileBtn');
 const loading = document.getElementById('loading');
 const resultSection = document.getElementById('resultSection');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+const historyList = document.getElementById('historyList');
 
 let currentFile = null;
+
+// ====================
+// HISTÓRICO - LOCALSTORAGE
+// ====================
+const HISTORY_KEY = 'email_classifications_history';
+const MAX_HISTORY_ITEMS = 50;
+
+function saveToHistory(emailPreview, result) {
+    try {
+        const history = getHistory();
+        const newItem = {
+            id: Date.now(),
+            date: new Date().toISOString(),
+            emailPreview: emailPreview.substring(0, 200), // Limita preview
+            classification: result.classification,
+            confidence: result.confidence,
+            reasoning: result.reasoning
+        };
+        
+        history.unshift(newItem); // Adiciona no início
+        
+        // Limita a 50 itens
+        if (history.length > MAX_HISTORY_ITEMS) {
+            history.pop();
+        }
+        
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        updateHistoryDisplay();
+    } catch (error) {
+        console.error('Erro ao salvar no histórico:', error);
+    }
+}
+
+function getHistory() {
+    try {
+        const history = localStorage.getItem(HISTORY_KEY);
+        return history ? JSON.parse(history) : [];
+    } catch (error) {
+        console.error('Erro ao carregar histórico:', error);
+        return [];
+    }
+}
+
+function clearHistory() {
+    if (confirm('Tem certeza que deseja limpar todo o histórico?')) {
+        localStorage.removeItem(HISTORY_KEY);
+        updateHistoryDisplay();
+    }
+}
+
+function updateHistoryDisplay() {
+    const history = getHistory();
+    
+    if (history.length === 0) {
+        historyList.innerHTML = `
+            <div class="empty-history">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                    <path d="M32 56C45.2548 56 56 45.2548 56 32C56 18.7452 45.2548 8 32 8C18.7452 8 8 18.7452 8 32C8 45.2548 18.7452 56 32 56Z" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M30 20V34L40 42" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+                <p>Nenhuma classificação ainda</p>
+                <p class="empty-hint">Classifique emails para ver o histórico aqui</p>
+            </div>
+        `;
+        return;
+    }
+    
+    historyList.innerHTML = history.map(item => {
+        const date = new Date(item.date);
+        const formattedDate = date.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        return `
+            <div class="history-item">
+                <div class="history-item-header">
+                    <span class="history-item-date">${formattedDate}</span>
+                    <span class="badge ${item.classification}">${item.classification}</span>
+                </div>
+                <div class="history-item-preview">${item.emailPreview}</div>
+                <div class="history-item-footer">
+                    <span class="history-confidence">Confiança: ${(item.confidence * 100).toFixed(0)}%</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Event listener para limpar histórico
+clearHistoryBtn.addEventListener('click', clearHistory);
+
+// Carrega histórico ao iniciar
+document.addEventListener('DOMContentLoaded', updateHistoryDisplay);
 
 // ====================
 // TABS
@@ -230,6 +329,10 @@ function displayResult(data) {
     } else {
         suggestionsContainer.style.display = 'none';
     }
+    
+    // Salva no histórico
+    const emailPreview = emailText.value || 'Arquivo enviado';
+    saveToHistory(emailPreview, data);
     
     // Mostra resultado
     showResult();

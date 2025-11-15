@@ -43,6 +43,12 @@
                         </svg>
                         Enviar Arquivo
                     </button>
+                    <button class="tab" data-tab="history">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10C18 14.4183 14.4183 18 10 18ZM9 5V11L13.2 13.4L14 12L10.5 10V5H9Z"/>
+                        </svg>
+                        Histórico
+                    </button>
                 </div>
 
                 <!-- Text Input -->
@@ -84,6 +90,30 @@
                         Classificar Arquivo
                     </button>
                 </div>
+
+                <!-- History Tab -->
+                <div class="tab-content" id="history-tab">
+                    <div class="history-header">
+                        <h3>Histórico de Classificações</h3>
+                        <button class="btn-clear-history" id="clearHistoryBtn">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                            Limpar Histórico
+                        </button>
+                    </div>
+                    <div class="history-list" id="historyList">
+                        <div class="empty-history">
+                            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                                <path d="M32 56C45.2548 56 56 45.2548 56 32C56 18.7452 45.2548 8 32 8C18.7452 8 8 18.7452 8 32C8 45.2548 18.7452 56 32 56Z" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                <path d="M30 20V34L40 42" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                            </svg>
+                            <p>Nenhuma classificação ainda</p>
+                            <p class="empty-hint">Classifique emails para ver o histórico aqui</p>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Loading Spinner -->
@@ -123,8 +153,25 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Desenvolvido por <a href="https://github.com/Brunotlps" target="_blank">Bruno Teixeira</a></p>
-            <p class="tech-stack">FastAPI + Ollama/OpenAI • Python 3.11</p>
+            <div class="footer-links">
+                <a href="https://github.com/Brunotlps/email-classifier" target="_blank" rel="noopener noreferrer" class="footer-btn">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    GitHub
+                </a>
+                
+                <a href="https://email-classifier-production-947c.up.railway.app/docs" target="_blank" rel="noopener noreferrer" class="footer-btn">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                    </svg>
+                    API Docs
+                </a>
+            </div>
+            
+            <p>Desenvolvido por <a href="https://github.com/Brunotlps" target="_blank" rel="noopener noreferrer">Bruno Teixeira</a></p>
+            <p class="tech-stack">FastAPI • OpenAI • Docker • Railway • Vercel</p>
         </footer>
     </div>
 
