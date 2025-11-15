@@ -13,3 +13,6 @@ python-dotenv==1.0.1
 python-multipart==0.0.12 # Pra aceitar upload de arquivos
 
 fastapi-cors==0.0.6
+
+pypdf2==3.0.1 # Para processar PDFs
+

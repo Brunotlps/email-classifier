@@ -33,6 +33,9 @@ async def root():
 async def health():
   return {"status": "healthy"}
 
+from app.api.routes import router as classification_router
+app.include_router(classification_router)
+
 @app.get("/test-ai")
 async def test_ai():
     """Endpoint para testar conexão com IA"""

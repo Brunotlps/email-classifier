@@ -58,5 +58,5 @@ class EmailClassifyResponse(BaseModel):
 
 class HealthCheckResponse(BaseModel):
     
-    status: Literal["healthy", "unhealthy"] = Field(..., default="healthy", description="Status da API")
-    version: str = Field(..., default="1.0.0", description="Versão da API")
+    status: Literal["healthy", "unhealthy"] = Field(default="healthy", description="Status da API")
+    version: str = Field(default="1.0.0", description="Versão da API")
