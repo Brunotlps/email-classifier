@@ -59,6 +59,7 @@ docker-compose.override.yml
 .coverage
 htmlcov/
 .tox/
+test_ai.py
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -70,3 +71,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+

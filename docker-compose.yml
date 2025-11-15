@@ -5,22 +5,16 @@ services:
     build: .
     container_name: email_classifier_api
     ports:
-      - "8001:8000"
+      - "8001:8000"  # Porta 8001 em ambos
     volumes:
-      - ./app:/app/app # Hot-reload
+      - ./app:/app/app
     environment:
       - ENVIRONMENT=development
-      - OPENAI_API_KEY=${OPENAI_API_KEY}  # Lê da variável de ambiente
-      - AI_PROVIDER=ollama  # Pode ser 'openai' ou 'ollama'
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434  # URL do Ollama no host
-    env_file:
-      - .env
+      - DOCKER_CONTAINER=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AI_PROVIDER=ollama
+      - OLLAMA_BASE_URL=http://172.21.0.1:11434  # IP do gateway que você descobriu
+      - OLLAMA_MODEL=qwen2.5:3b
+      - MAX_TOKENS=500
+      - TEMPERATURE=0.7
     restart: unless-stopped
-    # Para usar GPU (se precisar com Ollama dentro do container)
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]

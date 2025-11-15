@@ -33,3 +33,26 @@ async def root():
 async def health():
   return {"status": "healthy"}
 
+@app.get("/test-ai")
+async def test_ai():
+    """Endpoint para testar conexão com IA"""
+    from app.utils.ai_client import get_ai_client
+    
+    try:
+        client = get_ai_client()
+        response = await client.generate(
+            prompt="Me diga olá em uma frase curta",
+            system_prompt="Você é um assistente útil"
+        )
+        return {
+            "status": "success",
+            "provider": settings.ai_provider,
+            "model": settings.ollama_model if settings.ai_provider == "ollama" else settings.openai_model,
+            "response": response
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
