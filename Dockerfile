@@ -8,9 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copia código
 COPY ./app ./app
-COPY ./tests ./tests
-COPY pytest.ini .
-COPY test_ai.py .
 
 # Railway define a porta via variável $PORT
 # Não usamos EXPOSE fixo aqui
