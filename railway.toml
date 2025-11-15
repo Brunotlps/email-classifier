@@ -1,13 +1,8 @@
 [build]
-# Diz pro Railway usar Docker pra buildar
 builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-# Comando que inicia a aplicação
-
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
-
 # Health check pra saber se tá rodando
 healthcheckPath = "/health"
 healthcheckTimeout = 300
