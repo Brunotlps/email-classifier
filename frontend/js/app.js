@@ -2,7 +2,7 @@
 // Em produção, use a URL do Railway. Em desenvolvimento, localhost.
 const API_BASE_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:8001'
-    : 'https://seu-projeto.railway.app'; // ⚠️ SUBSTITUIR pela URL real do Railway após deploy
+    : 'https:///email-classifier-production-947c.up.railway.app'; // ⚠️ SUBSTITUIR pela URL real do Railway após deploy
 
 // Elementos DOM
 const tabs = document.querySelectorAll('.tab');
