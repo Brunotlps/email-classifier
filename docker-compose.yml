@@ -5,17 +5,17 @@ services:
     build: .
     container_name: email_classifier_api
     ports:
-      - "8001:8000"  # Porta 8001 em ambos
-    volumes:
-      - ./app:/app/app
-      - ./tests:/app/tests  
-      - ./pytest.ini:/app/pytest.ini
+      - "8001:8000" # Porta 8001 em ambos
+    # volumes:
+    #   - ./app:/app/app
+    #   - ./tests:/app/tests  
+    #   - ./pytest.ini:/app/pytest.ini
     environment:
       - ENVIRONMENT=development
       - DOCKER_CONTAINER=true
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - AI_PROVIDER=ollama
-      - OLLAMA_BASE_URL=http://172.21.0.1:11434  # IP do gateway que você descobriu
+      - OLLAMA_BASE_URL=http://172.21.0.1:11434 # IP do gateway que você descobriu
       - OLLAMA_MODEL=qwen2.5:3b
       - MAX_TOKENS=500
       - TEMPERATURE=0.7
