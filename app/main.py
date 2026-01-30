@@ -1,7 +1,28 @@
-from fastapi import FastAPI
+import structlog, time, logging
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
+
+# Configurações de structlog
+structlog.configure(
+    processors=[
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.JSONRenderer()
+    ]
+)
+
+
+# Logger global
+logger = structlog.get_logger()
+
+
+# Configuração do rate limiter
+limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 
 app = FastAPI(
   title="Email Classifier API",
@@ -10,6 +31,38 @@ app = FastAPI(
   docs_url="/docs", # Swagger
   redoc_url="/redoc" # ReDoc
 )
+
+# Registrar handler de erro para rate limit
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Middleware para logging de requests
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    
+    # Captura o IP do cliente
+    client_ip = request.client.host if request.client else "unknown"
+    
+    # Processa a request
+    response = await call_next(request)
+    
+    # Calcula o tempo de resposta em ms
+    process_time_ms = (time.time() - start_time) * 1000
+    
+    # Loga as informações da request
+    logger.info(
+        "request_completed",
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+        response_time_ms=round(process_time_ms, 2),
+        client_ip=client_ip
+    )
+    
+    return response
+
 
 # Configurações do CORS
 # Em produção, allowed_origins virá das variáveis de ambiente

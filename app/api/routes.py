@@ -1,16 +1,24 @@
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Request
 from app.models.schemas import EmailClassifyRequest, EmailClassifyResponse
 from app.services.classifier import EmailClassifier
 from app.services.response_generator import ResponseGenerator
 from app.utils.file_parser import FileParser
 
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
 router = APIRouter(prefix="/api/v1", tags=["Classification"])
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 # Instanciando os serviços (usar injeção de dependência futuramente)
 classifier = EmailClassifier()
 response_generator = ResponseGenerator()
 
 # Criação das rotas
+
+@limiter.limit("10/minute")
 @router.post(
   "/classify",
   response_model=EmailClassifyResponse,
@@ -25,7 +33,7 @@ response_generator = ResponseGenerator()
     
     **Improdutivo**: Spam, marketing não solicitado, emails sem valor."""
 )
-async def classify_email(request: EmailClassifyRequest):
+async def classify_email(request: Request, email_request: EmailClassifyRequest):
   """
   Endpoint principal de classificação de emails.
   
@@ -41,12 +49,12 @@ async def classify_email(request: EmailClassifyRequest):
   """
 
   try:
-    classification_result = await classifier.classify(request.email_content)
+    classification_result = await classifier.classify(email_request.email_content)
     suggestions = []
 
     if classification_result["classification"] == "produtivo":
       try:
-        suggestions = await response_generator.generate_suggestions(email_content=request.email_content, num_suggestions=2)
+        suggestions = await response_generator.generate_suggestions(email_content=email_request.email_content, num_suggestions=2)
       
       except Exception as e:
         # Não será necessário parar as requisições em caso de falha ao gerar sugestões de respostas
