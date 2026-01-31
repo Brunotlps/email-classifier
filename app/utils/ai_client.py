@@ -2,11 +2,21 @@
 Cliente unificado para trabalhar com diferentes provedores de IA
 Suporta: OpenAI e Ollama
 """
-import httpx
-import json
+import httpx, json, structlog
+
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 from app.config import settings
+from openai import OpenAI, RateLimitError, AuthenticationError, APIError
+
+
+logger = structlog.getLogger()
+
+def _mask_api_key(key: str) -> str:
+
+    if not key or len(key) < 10:
+        return "***INVALID***"
+    return f"{key[:7]}...{key[-4:]}"
 
 
 class AIClient(ABC):
@@ -24,6 +34,20 @@ class OllamaClient(AIClient):
     def __init__(self):
         self.base_url = settings.ollama_base_url
         self.model = settings.ollama_model
+        
+        # Configuração de timeout granular
+        self.client = httpx.AsyncClient(
+            timeout=httpx.Timeout(
+                connect=5.0,
+                read=60.0,
+                write=5.0,
+                pool=5.0
+            )
+        )
+        
+        logger.info("ollama_client_initialized",
+                    base_url=self.base_url,
+                    model=self.model)
     
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
         """
@@ -49,24 +73,52 @@ class OllamaClient(AIClient):
             }
         }
         
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            try:
-                response = await client.post(url, json=payload)
-                response.raise_for_status()
-                result = response.json()
-                return result.get("response", "")
-            except httpx.HTTPError as e:
-                raise Exception(f"Erro ao chamar Ollama: {str(e)}")
+        try:
+            response = await self.client.post(url, json=payload)
+            response.raise_for_status()
+            result = response.json()
+            return result.get("response", "")
+        except httpx.HTTPError as e:
+            raise Exception(f"Erro ao chamar Ollama: {str(e)}")
 
 
 class OpenAIClient(AIClient):
     """Cliente para OpenAI API"""
     
     def __init__(self):
-        self.api_key = settings.openai_api_key
-        self.model = settings.openai_model
-        self.base_url = "https://api.openai.com/v1/chat/completions"
+        
+        
+        self._validate_api_key() 
+        self.client = OpenAI(api_key=settings.openai_api_key)
+        logger.info("openai_client_initialized", model=settings.openai_model, key=_mask_api_key(settings.openai_api_key))  
     
+        # self.api_key = settings.openai_api_key
+        # self.model = settings.openai_model
+        # self.base_url = "https://api.openai.com/v1/chat/completions"
+    
+    
+    def _validate_api_key(self):
+        """
+        Valida a chave da API OpenAI
+        
+        Verifica se a chave está configurada e se possui o formato correto
+        (deve começar com 'sk-'). Registra informações de validação no log.
+        
+        Raises:
+            ValueError: Se a chave não estiver configurada ou for inválida
+        """
+
+
+        if not settings.openai_api_key or settings.openai_api_key == "":
+            raise ValueError("OpenAI API key não configurada (env: OPENAI_API_KEY)")    
+        if not settings.openai_api_key.startswith("sk-"):
+            raise ValueError("OpenAI API key inválida (deve começar com 'sk-')") 
+
+        logger.info("openai_api_key_validated", 
+            key_prefix=settings.openai_api_key[:7],  # Mostra só "sk-proj"
+            key_length=len(settings.openai_api_key))
+
+
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
         """
         Gera resposta usando OpenAI
@@ -78,34 +130,43 @@ class OpenAIClient(AIClient):
         Returns:
             Resposta do modelo
         """
-        if not self.api_key or self.api_key == "sua-chave-aqui":
-            raise Exception("OpenAI API key não configurada. Configure OPENAI_API_KEY no .env")
+        try:
+            response = await self.client.chat.completions.create(
+                model=settings.openai_model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=settings.max_tokens,
+                temperature=settings.temperature
+            )
+            return response.choices[0].message.content
         
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+        except RateLimitError as e:
+            logger.error("openai_rate_limit_exceeded", error=str(e))
+            raise ValueError(
+                "Rate limit da OpenAI excedido. "
+                "Aguarde alguns segundos e tente novamente."
+            )
         
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
+        except AuthenticationError as e:
+            logger.error("openai_authentication_failed", 
+                         key=_mask_api_key(settings.openai_api_key))
+            raise ValueError(
+                "Autenticação OpenAI falhou. "
+                "Verifique se sua API key está correta e ativa."
+            )
         
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": settings.temperature,
-            "max_tokens": settings.max_tokens
-        }
+        except APIError as e:
+            logger.error("openai_api_error", error=str(e), status_code=e.status_code)
+            raise Exception(f"Erro na API da OpenAI: {str(e)}")
         
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            try:
-                response = await client.post(self.base_url, headers=headers, json=payload)
-                response.raise_for_status()
-                result = response.json()
-                return result["choices"][0]["message"]["content"]
-            except httpx.HTTPError as e:
-                raise Exception(f"Erro ao chamar OpenAI: {str(e)}")
+        except Exception as e:
+            logger.error("openai_unexpected_error", error=str(e))
+            raise
+
+
+    
 
 
 def get_ai_client() -> AIClient:
@@ -121,3 +182,4 @@ def get_ai_client() -> AIClient:
         return OpenAIClient()
     else:
         raise ValueError(f"Provedor de IA inválido: {settings.ai_provider}")
+    

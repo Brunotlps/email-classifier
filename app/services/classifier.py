@@ -242,9 +242,3 @@ class EmailClassifier:
 
 
 
-"""
-Pontos fracos:
-
-Sem retry se IA falhar
-Sem cache (pode gerar custos repetidos)
-"""
