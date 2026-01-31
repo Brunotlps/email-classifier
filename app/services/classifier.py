@@ -1,7 +1,13 @@
-import json
-import re
+import json, re, hashlib, structlog
+
+from tenacity import retry, stop_after_attempt, wait_exponential
+from cachetools import TTLCache
 from typing import Dict, Any
 from app.utils.ai_client import get_ai_client
+
+
+logger = structlog.get_logger()
+
 
 class EmailClassifier:
   """
@@ -9,14 +15,61 @@ class EmailClassifier:
   
   - Produtivo: Emails que requerem uma ação ou resposta específica (ex.: solicitações de suporte técnico, atualização sobre casos em aberto, dúvidas sobre o sistema).
   - Improdutivo: Emails que não necessitam de uma ação imediata (ex.: mensagens de felicitações, agradecimentos).
+  
+  Funcionalidades:
+  - Cache TTL: Armazena classificações por 1 hora (TTLCache com 100 entradas) para evitar classificações duplicadas e reduzir custos.
+  - Retry automático: Implementa até 3 tentativas com backoff exponencial em caso de falhas na comunicação com o serviço de IA.
   """
+
 
   def __init__(self):
     self.ai_client = get_ai_client()
+    self.cache = TTLCache(maxsize=100, ttl=3600)
+
+
+  def _generate_cache_key(self, email_content: str) -> str:
+    """
+    Gera uma chave de cache única baseada no conteúdo do email.
+    
+    Utiliza SHA-256 para criar um hash determinístico do conteúdo,
+    garantindo que emails idênticos resultem na mesma chave.
+    
+    Args:
+        email_content: Conteúdo do email a ser hashado
+        
+    Returns:
+        String hexadecimal representando o hash SHA-256 do conteúdo
+    """
+    return hashlib.sha256(email_content.encode()).hexdigest()
+  
+
+  @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10), reraise=True)
+  async def _classify_with_retry(self, prompt: str, system_prompt: str) -> str:
+    """
+    Executa a chamada ao cliente de IA com mecanismo de retry automático.
+    
+    Utiliza tenacity para realizar até 3 tentativas com backoff exponencial
+    em caso de falhas temporárias na comunicação com o serviço de IA.
+    
+    Args:
+        prompt: Prompt do usuário contendo o email a ser classificado
+        system_prompt: Prompt do sistema com instruções de classificação
+        
+    Returns:
+        Resposta em formato string do modelo de IA
+        
+    Raises:
+        Exception: Se todas as 3 tentativas falharem, propaga a última exceção
+    """
+    return await self.ai_client.generate(prompt, system_prompt)
+
 
   async def classify(self, email_content: str) -> Dict[str, Any]:
     """
     Classifica um email e retorna análise detalhada.
+    
+    Utiliza cache TTL (1 hora) para evitar classificações duplicadas,
+    reduzindo custos e melhorando performance.
     
     Args:
         email_content: Conteúdo do email a ser classificado
@@ -31,18 +84,25 @@ class EmailClassifier:
         Exception: Se houver erro na comunicação com a IA
     """
 
+    
+    cache_key = self._generate_cache_key(email_content)
+
+    if cache_key in self.cache:
+       logger.info("cache_hit", key=cache_key[:8])
+       return self.cache[cache_key]
+
     # Variáveis de prompt engineering
     system_prompt = self._build_system_prompt()
     user_prompt = self._build_user_prompt(email_content)
 
     # Chamada da IA
-    response = await self.ai_client.generate(
-      prompt=user_prompt,
-      system_prompt=system_prompt
-    )
+    response = await self._classify_with_retry(user_prompt, system_prompt)
 
     # Parse da resposta JSON
     result = self._parse_response(response)
+
+    self.cache[cache_key] = result
+    logger.info("cache_saved", key=cache_key[:8])
 
     return result
 
@@ -177,3 +237,14 @@ class EmailClassifier:
     # Valida reasoning
     if not isinstance(result["reasoning"], str) or not result["reasoning"].strip():
         raise ValueError("Reasoning deve ser uma string não vazia")
+    
+  
+
+
+
+"""
+Pontos fracos:
+
+Sem retry se IA falhar
+Sem cache (pode gerar custos repetidos)
+"""

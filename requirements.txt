@@ -20,6 +20,10 @@ pypdf2==3.0.1 # Para processar PDFs
 slowapi==0.1.9
 structlog==24.1.0
 
+# Fluxo de Cache e Retry
+cachetools==5.3.2
+tenacity==8.2.3
+
 # Testes
 pytest==8.3.3
 pytest-asyncio==0.24.0
