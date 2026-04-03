@@ -18,6 +18,19 @@ const loading = document.getElementById('loading');
 const resultSection = document.getElementById('resultSection');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const historyList = document.getElementById('historyList');
+const errorBanner = document.getElementById('errorBanner');
+const errorMessage = document.getElementById('errorMessage');
+
+document.getElementById('errorClose').addEventListener('click', hideError);
+
+function showError(message) {
+    errorMessage.textContent = message;
+    errorBanner.classList.add('show');
+}
+
+function hideError() {
+    errorBanner.classList.remove('show');
+}
 
 let currentFile = null;
 
@@ -137,8 +150,7 @@ tabs.forEach(tab => {
             }
         });
         
-        // Reset resultado
-        hideResult();
+        hideError();
     });
 });
 
@@ -164,12 +176,12 @@ uploadArea.addEventListener('dragover', (e) => {
 });
 
 uploadArea.addEventListener('dragleave', () => {
-    uploadArea.style.borderColor = 'var(--gray-300)';
+    uploadArea.style.borderColor = '';
 });
 
 uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
-    uploadArea.style.borderColor = 'var(--gray-300)';
+    uploadArea.style.borderColor = '';
     
     const file = e.dataTransfer.files[0];
     handleFileSelect(file);
@@ -188,13 +200,13 @@ function handleFileSelect(file) {
     const extension = '.' + file.name.split('.').pop().toLowerCase();
     
     if (!validExtensions.includes(extension)) {
-        alert(`Formato não suportado. Use: ${validExtensions.join(', ')}`);
+        showError(`Formato não suportado. Use: ${validExtensions.join(', ')}`);
         return;
     }
-    
+
     // Valida tamanho (5MB)
     if (file.size > 5 * 1024 * 1024) {
-        alert('Arquivo muito grande. Máximo: 5MB');
+        showError('Arquivo muito grande. Máximo: 5MB');
         return;
     }
     
@@ -202,8 +214,8 @@ function handleFileSelect(file) {
     
     // Mostra arquivo selecionado
     selectedFile.innerHTML = `
-        <strong>Arquivo selecionado:</strong> ${file.name} 
-        <span style="color: var(--gray-500)">(${formatFileSize(file.size)})</span>
+        <strong>Arquivo selecionado:</strong> ${file.name}
+        <span style="color: var(--text-muted)">(${formatFileSize(file.size)})</span>
     `;
     selectedFile.classList.add('show');
     classifyFileBtn.disabled = false;
@@ -220,14 +232,11 @@ function formatFileSize(bytes) {
 // ====================
 classifyTextBtn.addEventListener('click', async () => {
     const content = emailText.value.trim();
-    
-    if (content.length < 10) {
-        alert('Email muito curto. Mínimo: 10 caracteres.');
-        return;
-    }
-    
+
+    hideError();
     showLoading();
-    
+    classifyTextBtn.disabled = true;
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/v1/classify`, {
             method: 'POST',
@@ -238,19 +247,23 @@ classifyTextBtn.addEventListener('click', async () => {
                 email_content: content
             })
         });
-        
+
         if (!response.ok) {
             throw new Error('Erro ao classificar email');
         }
-        
+
         const data = await response.json();
-        displayResult(data);
-        
+        displayResult(data, content);
+
     } catch (error) {
         console.error('Erro:', error);
-        alert('Erro ao classificar email. Verifique se a API está rodando.');
+        const isOffline = error instanceof TypeError;
+        showError(isOffline
+            ? 'Não foi possível conectar à API. Verifique sua conexão.'
+            : 'Erro ao classificar email. Tente novamente.');
     } finally {
         hideLoading();
+        classifyTextBtn.disabled = emailText.value.trim().length < 10;
     }
 });
 
@@ -259,38 +272,44 @@ classifyTextBtn.addEventListener('click', async () => {
 // ====================
 classifyFileBtn.addEventListener('click', async () => {
     if (!currentFile) return;
-    
+
+    hideError();
     showLoading();
-    
+    classifyFileBtn.disabled = true;
+
     try {
         const formData = new FormData();
         formData.append('file', currentFile);
-        
+
         const response = await fetch(`${API_BASE_URL}/api/v1/classify-file`, {
             method: 'POST',
             body: formData
         });
-        
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.detail || 'Erro ao classificar arquivo');
         }
-        
+
         const data = await response.json();
-        displayResult(data);
-        
+        displayResult(data, `[arquivo] ${currentFile.name}`);
+
     } catch (error) {
         console.error('Erro:', error);
-        alert(error.message || 'Erro ao classificar arquivo. Verifique se a API está rodando.');
+        const isOffline = error instanceof TypeError;
+        showError(isOffline
+            ? 'Não foi possível conectar à API. Verifique sua conexão.'
+            : error.message || 'Erro ao classificar arquivo. Tente novamente.');
     } finally {
         hideLoading();
+        classifyFileBtn.disabled = false;
     }
 });
 
 // ====================
 // EXIBIR RESULTADO
 // ====================
-function displayResult(data) {
+function displayResult(data, emailPreview) {
     const { classification, confidence, reasoning, suggestions } = data;
     
     // Badge de classificação
@@ -331,8 +350,7 @@ function displayResult(data) {
     }
     
     // Salva no histórico
-    const emailPreview = emailText.value || 'Arquivo enviado';
-    saveToHistory(emailPreview, data);
+    saveToHistory(emailPreview || '', data);
     
     // Mostra resultado
     showResult();

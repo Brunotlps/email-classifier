@@ -24,12 +24,12 @@ Error handling is currently done via `alert()`. No inline feedback components ex
 |---|---|---|---|
 | 1 | Critical | [x] | Fix triple-slash in Railway production URL |
 | 2 | Critical | [x] | Fix `border-left` overridden by `border` shorthand on suggestion cards |
-| 3 | High | [ ] | Fix history preview for file uploads (stores filename, not empty string) |
-| 4 | High | [ ] | Fix classify button enabled on initial load with 0 characters |
-| 5 | High | [ ] | Fix drag-and-drop border color using non-existent `--gray-300` variable |
-| 6 | High | [ ] | Replace `alert()` errors with inline error component |
-| 7 | High | [ ] | Disable classify buttons during API call to prevent double-submit |
-| 8 | High | [ ] | Preserve result when switching tabs (don't call `hideResult()` on tab change) |
+| 3 | High | [x] | Fix history preview for file uploads (stores filename, not empty string) |
+| 4 | High | [x] | Fix classify button enabled on initial load with 0 characters |
+| 5 | High | [x] | Fix drag-and-drop border color using non-existent `--gray-300` variable |
+| 6 | High | [x] | Replace `alert()` errors with inline error component |
+| 7 | High | [x] | Disable classify buttons during API call to prevent double-submit |
+| 8 | High | [x] | Preserve result when switching tabs (don't call `hideResult()` on tab change) |
 | 9 | Medium | [ ] | Add copy-to-clipboard button on each suggestion card |
 | 10 | Medium | [ ] | Add explanatory empty state when no suggestions are returned |
 | 11 | Medium | [ ] | Add semantic color to confidence bar (green/yellow/red thresholds) |
