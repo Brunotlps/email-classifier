@@ -34,11 +34,11 @@ Error handling is currently done via `alert()`. No inline feedback components ex
 | 10 | Medium | [x] | Add explanatory empty state when no suggestions are returned |
 | 11 | Medium | [x] | Add semantic color to confidence bar (green/yellow/red thresholds) |
 | 12 | Medium | [x] | Clear current file state after classification |
-| 13 | Low | [ ] | Add ARIA roles and attributes to tab navigation |
-| 14 | Low | [ ] | Make file upload area keyboard-navigable (tabindex + Enter/Space) |
-| 15 | Low | [ ] | Add `aria-hidden="true"` to decorative SVG icons |
-| 16 | Low | [ ] | Update footer tech stack text (remove hardcoded "OpenAI") |
-| 17 | Low | [ ] | Distinguish network errors from API validation errors (400/422 vs offline) |
+| 13 | Low | [x] | Add ARIA roles and attributes to tab navigation |
+| 14 | Low | [x] | Make file upload area keyboard-navigable (tabindex + Enter/Space) |
+| 15 | Low | [x] | Add `aria-hidden="true"` to decorative SVG icons |
+| 16 | Low | [x] | Update footer tech stack text (remove hardcoded "OpenAI") |
+| 17 | Low | [x] | Distinguish network errors from API validation errors — done in High batch |
 
 ---
 
