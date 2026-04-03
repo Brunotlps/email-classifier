@@ -64,7 +64,7 @@
                             <span id="charCount">0</span> caracteres (mínimo: 10)
                         </div>
                     </div>
-                    <button class="btn btn-primary" id="classifyTextBtn">
+                    <button class="btn btn-primary" id="classifyTextBtn" disabled>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M10 3C6.13401 3 3 6.13401 3 10C3 13.866 6.13401 17 10 17C13.866 17 17 13.866 17 10C17 6.13401 13.866 3 10 3ZM13.7071 8.70711L9.70711 12.7071C9.31658 13.0976 8.68342 13.0976 8.29289 12.7071L6.29289 10.7071C5.90237 10.3166 5.90237 9.68342 6.29289 9.29289C6.68342 8.90237 7.31658 8.90237 7.70711 9.29289L9 10.5858L12.2929 7.29289C12.6834 6.90237 13.3166 6.90237 13.7071 7.29289C14.0976 7.68342 14.0976 8.31658 13.7071 8.70711Z"/>
                         </svg>
@@ -115,6 +115,12 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Error Banner -->
+            <div class="error-banner" id="errorBanner">
+                <span id="errorMessage"></span>
+                <button class="error-close" id="errorClose">&times;</button>
+            </div>
 
             <!-- Loading Spinner -->
             <div class="loading" id="loading">
