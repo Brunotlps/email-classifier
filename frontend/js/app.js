@@ -137,11 +137,15 @@ document.addEventListener('DOMContentLoaded', updateHistoryDisplay);
 tabs.forEach(tab => {
     tab.addEventListener('click', () => {
         const tabName = tab.dataset.tab;
-        
+
         // Atualiza tabs
-        tabs.forEach(t => t.classList.remove('active'));
+        tabs.forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+        });
         tab.classList.add('active');
-        
+        tab.setAttribute('aria-selected', 'true');
+
         // Atualiza conteúdo
         tabContents.forEach(content => {
             content.classList.remove('active');
@@ -149,7 +153,7 @@ tabs.forEach(tab => {
                 content.classList.add('active');
             }
         });
-        
+
         hideError();
     });
 });
@@ -169,6 +173,13 @@ emailText.addEventListener('input', () => {
 // UPLOAD DE ARQUIVO
 // ====================
 uploadArea.addEventListener('click', () => fileInput.click());
+
+uploadArea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput.click();
+    }
+});
 
 uploadArea.addEventListener('dragover', (e) => {
     e.preventDefault();
