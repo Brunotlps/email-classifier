@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Overview
+
+FastAPI REST API that classifies emails as **productive** or **unproductive** using LLMs (Ollama in dev, OpenAI in prod), with response suggestion generation and file upload support for `.txt`, `.eml`, and `.pdf`.
+
+---
+
 ## Commands
 
 ### Running the application
@@ -18,6 +24,17 @@ docker-compose up -d --build
 # API available at http://localhost:8001
 # Swagger UI at http://localhost:8001/docs
 # ReDoc at http://localhost:8001/redoc
+```
+
+### Smoke test (run this first to confirm the environment is functional)
+```bash
+# Verify the container is up and the AI backend is reachable
+curl -s http://localhost:8001/health && curl -s http://localhost:8001/test-ai
+
+# Quick classification sanity check
+curl -s -X POST http://localhost:8001/api/v1/classify \
+  -H "Content-Type: application/json" \
+  -d '{"email_content": "Prezado, gostaria de agendar uma reunião para discutir o projeto."}'
 ```
 
 ### Running tests
@@ -37,6 +54,10 @@ docker exec -it email_classifier_api pytest tests/test_classifier.py::TestEmailC
 # Skip slow/integration tests
 docker exec -it email_classifier_api pytest tests/ -m "not slow and not integration"
 ```
+
+### AI provider for local development
+
+**Always use `AI_PROVIDER=ollama` for local development.** Never suggest OpenAI-based code or configurations unless the context is explicitly production or the user asks for it. OpenAI is only used in production (Railway).
 
 ### Ollama setup (required for local development)
 ```bash
@@ -188,6 +209,18 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 
 ### asyncio configuration
 `pytest.ini` sets `asyncio_mode = auto` — all `async def test_*` functions are automatically treated as async tests without needing `@pytest.mark.asyncio` (though the existing tests include it explicitly for clarity).
+
+---
+
+## Tech Debt
+
+Known issues to fix — do not perpetuate these patterns when writing new code:
+
+| Location | Issue | What to do instead |
+|---|---|---|
+| `app/api/routes.py` | `print()` calls used for logging | Use `structlog.get_logger()` like services do |
+
+> When touching any of these files, fix the tech debt in the same PR if the change is small. Otherwise, leave a `# TODO:` comment referencing this section.
 
 ---
 
