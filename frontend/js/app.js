@@ -294,6 +294,12 @@ classifyFileBtn.addEventListener('click', async () => {
         const data = await response.json();
         displayResult(data, `[arquivo] ${currentFile.name}`);
 
+        // Limpa estado do arquivo após classificação bem-sucedida
+        currentFile = null;
+        selectedFile.innerHTML = '';
+        selectedFile.classList.remove('show');
+        fileInput.value = '';
+
     } catch (error) {
         console.error('Erro:', error);
         const isOffline = error instanceof TypeError;
@@ -302,7 +308,7 @@ classifyFileBtn.addEventListener('click', async () => {
             : error.message || 'Erro ao classificar arquivo. Tente novamente.');
     } finally {
         hideLoading();
-        classifyFileBtn.disabled = false;
+        classifyFileBtn.disabled = !currentFile;
     }
 });
 
@@ -320,9 +326,13 @@ function displayResult(data, emailPreview) {
     // Barra de confiança
     const confidenceValue = document.getElementById('confidenceValue');
     const progressFill = document.getElementById('progressFill');
-    
+
     confidenceValue.textContent = `${(confidence * 100).toFixed(0)}%`;
     progressFill.style.width = `${confidence * 100}%`;
+    progressFill.className = 'progress-fill ' + (
+        confidence >= 0.75 ? 'confidence-high' :
+        confidence >= 0.50 ? 'confidence-medium' : 'confidence-low'
+    );
     
     // Reasoning
     const reasoningText = document.getElementById('reasoningText');
@@ -334,19 +344,40 @@ function displayResult(data, emailPreview) {
     if (suggestions && suggestions.length > 0) {
         suggestionsContainer.innerHTML = `
             <h3>Sugestões de Resposta</h3>
-            ${suggestions.map(s => `
+            ${suggestions.map((s, i) => `
                 <div class="suggestion-card">
                     <div class="suggestion-header">
                         <span class="suggestion-title">${s.title}</span>
-                        <span class="suggestion-tone">${s.tone}</span>
+                        <div class="suggestion-actions">
+                            <span class="suggestion-tone">${s.tone}</span>
+                            <button class="btn-copy" data-index="${i}" title="Copiar sugestão">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     <div class="suggestion-content">${s.content}</div>
                 </div>
             `).join('')}
         `;
         suggestionsContainer.style.display = 'block';
+
+        // Copia sugestão para clipboard via delegação de evento
+        suggestionsContainer.querySelectorAll('.btn-copy').forEach((btn, i) => {
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(suggestions[i].content).then(() => {
+                    btn.classList.add('copied');
+                    setTimeout(() => btn.classList.remove('copied'), 2000);
+                });
+            });
+        });
     } else {
-        suggestionsContainer.style.display = 'none';
+        const emptyMsg = classification === 'improdutivo'
+            ? 'Sugestões de resposta não são geradas para emails improdutivos.'
+            : 'Nenhuma sugestão gerada para este email.';
+        suggestionsContainer.innerHTML = `<p class="suggestions-empty">${emptyMsg}</p>`;
+        suggestionsContainer.style.display = 'block';
     }
     
     // Salva no histórico

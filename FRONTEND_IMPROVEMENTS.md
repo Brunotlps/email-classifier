@@ -30,10 +30,10 @@ Error handling is currently done via `alert()`. No inline feedback components ex
 | 6 | High | [x] | Replace `alert()` errors with inline error component |
 | 7 | High | [x] | Disable classify buttons during API call to prevent double-submit |
 | 8 | High | [x] | Preserve result when switching tabs (don't call `hideResult()` on tab change) |
-| 9 | Medium | [ ] | Add copy-to-clipboard button on each suggestion card |
-| 10 | Medium | [ ] | Add explanatory empty state when no suggestions are returned |
-| 11 | Medium | [ ] | Add semantic color to confidence bar (green/yellow/red thresholds) |
-| 12 | Medium | [ ] | Clear current file state after classification |
+| 9 | Medium | [x] | Add copy-to-clipboard button on each suggestion card |
+| 10 | Medium | [x] | Add explanatory empty state when no suggestions are returned |
+| 11 | Medium | [x] | Add semantic color to confidence bar (green/yellow/red thresholds) |
+| 12 | Medium | [x] | Clear current file state after classification |
 | 13 | Low | [ ] | Add ARIA roles and attributes to tab navigation |
 | 14 | Low | [ ] | Make file upload area keyboard-navigable (tabindex + Enter/Space) |
 | 15 | Low | [ ] | Add `aria-hidden="true"` to decorative SVG icons |
