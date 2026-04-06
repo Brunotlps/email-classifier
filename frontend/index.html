@@ -10,20 +10,24 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
+            <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema claro/escuro">
+                <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 3a9 9 0 1 0 0 18A9 9 0 0 0 12 3zm0 2a7 7 0 0 1 0 14V5z"/>
+                </svg>
+            </button>
             <div class="logo">
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
                     <rect width="40" height="40" rx="8" fill="url(#gradient)"/>
                     <path d="M10 13L20 21L30 13M10 27V13C10 11.8954 10.8954 11 12 11H28C29.1046 11 30 11.8954 30 13V27C30 28.1046 29.1046 29 28 29H12C10.8954 29 10 28.1046 10 27Z" stroke="white" stroke-width="2" stroke-linecap="round"/>
                     <defs>
                         <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
-                            <stop stop-color="#667eea"/>
-                            <stop offset="1" stop-color="#764ba2"/>
+                            <stop stop-color="#c07b3a"/>
+                            <stop offset="1" stop-color="#a8642e"/>
                         </linearGradient>
                     </defs>
                 </svg>
                 <h1>Email Classifier</h1>
             </div>
-            <p class="subtitle">Classificação inteligente com IA</p>
         </header>
 
         <!-- Main Content -->
@@ -48,6 +52,12 @@
                             <path d="M10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10C18 14.4183 14.4183 18 10 18ZM9 5V11L13.2 13.4L14 12L10.5 10V5H9Z"/>
                         </svg>
                         Histórico
+                    </button>
+                    <button class="tab" data-tab="about" id="tab-about" role="tab" aria-selected="false" aria-controls="about-tab">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M10 2a8 8 0 1 0 0 16A8 8 0 0 0 10 2zm0 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-1 4h2v5H9V9z"/>
+                        </svg>
+                        Sobre
                     </button>
                 </div>
 
@@ -113,6 +123,161 @@
                             <p class="empty-hint">Classifique emails para ver o histórico aqui</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- About Tab -->
+                <div class="tab-content" id="about-tab" role="tabpanel" aria-labelledby="tab-about">
+
+                    <!-- Hero -->
+                    <div class="about-section about-hero">
+                        <svg width="48" height="48" viewBox="0 0 40 40" fill="none" aria-hidden="true" class="about-hero-logo">
+                            <rect width="40" height="40" rx="8" fill="url(#gradient-about)"/>
+                            <path d="M10 13L20 21L30 13M10 27V13C10 11.8954 10.8954 11 12 11H28C29.1046 11 30 11.8954 30 13V27C30 28.1046 29.1046 29 28 29H12C10.8954 29 10 28.1046 10 27Z" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                            <defs>
+                                <linearGradient id="gradient-about" x1="0" y1="0" x2="40" y2="40">
+                                    <stop stop-color="#c07b3a"/>
+                                    <stop offset="1" stop-color="#a8642e"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <h2 class="about-hero-title">Email Classifier</h2>
+                        <p class="about-hero-description">
+                            Envie um email por texto ou arquivo e receba em segundos uma classificação
+                            (<strong>produtivo</strong> ou <strong>improdutivo</strong>), uma pontuação de confiança
+                            com justificativa detalhada, e sugestões de resposta geradas por IA —
+                            tudo sem sair do navegador.
+                        </p>
+                    </div>
+
+                    <!-- Como funciona -->
+                    <div class="about-section">
+                        <h3 class="about-section-title">Como funciona</h3>
+                        <div class="about-steps">
+                            <div class="about-step">
+                                <div class="about-step-number">1</div>
+                                <div class="about-step-body">
+                                    <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="about-step-icon">
+                                        <path d="M2 5C2 3.89543 2.89543 3 4 3H16C17.1046 3 18 3.89543 18 5V15C18 16.1046 17.1046 17 16 17H4C2.89543 17 2 16.1046 2 15V5ZM4 7V15H16V7L10 11L4 7ZM16 5H4L10 9L16 5Z"/>
+                                    </svg>
+                                    <p class="about-step-title">Envie o email</p>
+                                    <p class="about-step-description">Escreva diretamente na aba de texto ou carregue um arquivo <code>.txt</code>, <code>.eml</code> ou <code>.pdf</code> de até 5 MB.</p>
+                                </div>
+                            </div>
+                            <div class="about-step">
+                                <div class="about-step-number">2</div>
+                                <div class="about-step-body">
+                                    <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="about-step-icon">
+                                        <path d="M10 2a8 8 0 1 0 0 16A8 8 0 0 0 10 2zm0 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-1 4h2v5H9V9z"/>
+                                    </svg>
+                                    <p class="about-step-title">IA analisa</p>
+                                    <p class="about-step-description">Um modelo de linguagem processa o conteúdo, classifica e calcula uma pontuação de confiança com base no contexto do email.</p>
+                                </div>
+                            </div>
+                            <div class="about-step">
+                                <div class="about-step-number">3</div>
+                                <div class="about-step-body">
+                                    <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="about-step-icon">
+                                        <path d="M10 3C6.13401 3 3 6.13401 3 10C3 13.866 6.13401 17 10 17C13.866 17 17 13.866 17 10C17 6.13401 13.866 3 10 3ZM13.7071 8.70711L9.70711 12.7071C9.31658 13.0976 8.68342 13.0976 8.29289 12.7071L6.29289 10.7071C5.90237 10.3166 5.90237 9.68342 6.29289 9.29289C6.68342 8.90237 7.31658 8.90237 7.70711 9.29289L9 10.5858L12.2929 7.29289C12.6834 6.90237 13.3166 6.90237 13.7071 7.29289C14.0976 7.68342 14.0976 8.31658 13.7071 8.70711Z"/>
+                                    </svg>
+                                    <p class="about-step-title">Veja o resultado</p>
+                                    <p class="about-step-description">Receba a classificação, a análise detalhada e, para emails produtivos, sugestões de resposta prontas para copiar.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stack tecnológico -->
+                    <div class="about-section">
+                        <h3 class="about-section-title">Tecnologias</h3>
+                        <div class="about-stack">
+                            <div class="about-stack-item">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="about-stack-icon">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                </svg>
+                                <div>
+                                    <p class="about-stack-name">FastAPI</p>
+                                    <p class="about-stack-description">Backend REST API em Python</p>
+                                </div>
+                            </div>
+                            <div class="about-stack-item">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="about-stack-icon">
+                                    <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-1 4h2v8h-2z"/>
+                                </svg>
+                                <div>
+                                    <p class="about-stack-name">Ollama / OpenAI</p>
+                                    <p class="about-stack-description">Modelos de linguagem para classificação</p>
+                                </div>
+                            </div>
+                            <div class="about-stack-item">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="about-stack-icon">
+                                    <path d="M22 12.5c0-.28-.28-.5-.62-.5H20v-1.5A1.5 1.5 0 0 0 18.5 9H13V7h1.5A.5.5 0 0 0 15 6.5v-2a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0-.5.5v2a.5.5 0 0 0 .5.5H11v2H5.5A1.5 1.5 0 0 0 4 10.5V12H2.62c-.34 0-.62.22-.62.5v4c0 .28.28.5.62.5H4v.5A1.5 1.5 0 0 0 5.5 19h13a1.5 1.5 0 0 0 1.5-1.5V17h1.38c.34 0 .62-.22.62-.5v-4z"/>
+                                </svg>
+                                <div>
+                                    <p class="about-stack-name">Docker</p>
+                                    <p class="about-stack-description">Containerização do serviço</p>
+                                </div>
+                            </div>
+                            <div class="about-stack-item">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="about-stack-icon">
+                                    <path d="M3 3h18v18H3V3zm16 16V5H5v14h14z"/>
+                                </svg>
+                                <div>
+                                    <p class="about-stack-name">Railway</p>
+                                    <p class="about-stack-description">Hospedagem da API em produção</p>
+                                </div>
+                            </div>
+                            <div class="about-stack-item">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="about-stack-icon">
+                                    <path d="M12 2L1 21h22L12 2zm0 4l8.5 15h-17L12 6z"/>
+                                </svg>
+                                <div>
+                                    <p class="about-stack-name">Vercel</p>
+                                    <p class="about-stack-description">Hospedagem do frontend</p>
+                                </div>
+                            </div>
+                            <div class="about-stack-item">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="about-stack-icon">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/>
+                                </svg>
+                                <div>
+                                    <p class="about-stack-name">Vanilla JS</p>
+                                    <p class="about-stack-description">Interface leve, sem framework</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Autor -->
+                    <div class="about-section about-author">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true" class="about-author-avatar">
+                            <rect width="48" height="48" rx="24" fill="url(#gradient-author)"/>
+                            <path d="M24 14a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 12c7 0 12 3.13 12 7v1H12v-1c0-3.87 5-7 12-7z" fill="white"/>
+                            <defs>
+                                <linearGradient id="gradient-author" x1="0" y1="0" x2="48" y2="48">
+                                    <stop stop-color="#c07b3a"/>
+                                    <stop offset="1" stop-color="#a8642e"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <p class="about-author-label">Desenvolvido por</p>
+                        <p class="about-author-name">Bruno Teixeira</p>
+                        <div class="about-links">
+                            <a href="https://github.com/Brunotlps/email-classifier" target="_blank" rel="noopener noreferrer" class="footer-btn">
+                                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                </svg>
+                                GitHub
+                            </a>
+                            <a href="https://email-classifier-production-947c.up.railway.app/docs" target="_blank" rel="noopener noreferrer" class="footer-btn">
+                                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                                    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                                </svg>
+                                API Docs
+                            </a>
+                        </div>
+                    </div>
+
                 </div>
             </section>
 

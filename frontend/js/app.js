@@ -1,3 +1,34 @@
+// ====================
+// TEMA CLARO/ESCURO
+// ====================
+const THEME_KEY = 'email_classifier_theme';
+
+const moonIcon = `<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>`;
+const sunIcon = `<path d="M12 3a9 9 0 1 0 0 18A9 9 0 0 0 12 3zm0 2a7 7 0 0 1 0 14V5z"/>`;
+
+function applyTheme(theme) {
+    const icon = document.getElementById('themeIcon');
+    if (theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        icon.innerHTML = moonIcon;
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        icon.innerHTML = sunIcon;
+    }
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'light' ? 'dark' : 'light';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+}
+
+(function initTheme() {
+    const saved = localStorage.getItem(THEME_KEY) || 'dark';
+    applyTheme(saved);
+})();
+
 // Configuração da API
 // Em produção, use a URL do Railway. Em desenvolvimento, localhost.
 const API_BASE_URL = window.location.hostname === 'localhost' 
@@ -128,8 +159,11 @@ function updateHistoryDisplay() {
 // Event listener para limpar histórico
 clearHistoryBtn.addEventListener('click', clearHistory);
 
-// Carrega histórico ao iniciar
-document.addEventListener('DOMContentLoaded', updateHistoryDisplay);
+// Carrega histórico e inicializa botão de tema ao iniciar
+document.addEventListener('DOMContentLoaded', () => {
+    updateHistoryDisplay();
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+});
 
 // ====================
 // TABS
