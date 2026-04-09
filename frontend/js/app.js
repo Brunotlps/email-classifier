@@ -1,8 +1,43 @@
+// ====================
+// TEMA CLARO/ESCURO
+// ====================
+const THEME_KEY = 'email_classifier_theme';
+
+const moonIcon = `<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>`;
+const sunIcon = `<path d="M12 3a9 9 0 1 0 0 18A9 9 0 0 0 12 3zm0 2a7 7 0 0 1 0 14V5z"/>`;
+
+function applyTheme(theme) {
+    const icon = document.getElementById('themeIcon');
+    if (theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        icon.innerHTML = moonIcon;
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        icon.innerHTML = sunIcon;
+    }
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'light' ? 'dark' : 'light';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+}
+
+(function initTheme() {
+    const saved = localStorage.getItem(THEME_KEY) || 'dark';
+    applyTheme(saved);
+})();
+
 // Configuração da API
 // Em produção, use a URL do Railway. Em desenvolvimento, localhost.
-const API_BASE_URL = window.location.hostname === 'localhost' 
+const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:8001'
-    : 'https:///email-classifier-production-947c.up.railway.app'; // ⚠️ SUBSTITUIR pela URL real do Railway após deploy
+    : 'https://email-classifier-production-947c.up.railway.app';
+
+// Defina como true enquanto o backend estiver indisponível.
+// Quando o backend voltar, mude para false e faça push.
+const MAINTENANCE_MODE = true;
 
 // Elementos DOM
 const tabs = document.querySelectorAll('.tab');
@@ -18,6 +53,19 @@ const loading = document.getElementById('loading');
 const resultSection = document.getElementById('resultSection');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const historyList = document.getElementById('historyList');
+const errorBanner = document.getElementById('errorBanner');
+const errorMessage = document.getElementById('errorMessage');
+
+document.getElementById('errorClose').addEventListener('click', hideError);
+
+function showError(message) {
+    errorMessage.textContent = message;
+    errorBanner.classList.add('show');
+}
+
+function hideError() {
+    errorBanner.classList.remove('show');
+}
 
 let currentFile = null;
 
@@ -115,8 +163,39 @@ function updateHistoryDisplay() {
 // Event listener para limpar histórico
 clearHistoryBtn.addEventListener('click', clearHistory);
 
-// Carrega histórico ao iniciar
-document.addEventListener('DOMContentLoaded', updateHistoryDisplay);
+// ====================
+// MODO DE MANUTENÇÃO
+// ====================
+function initMaintenanceBanner() {
+    if (!MAINTENANCE_MODE) return;
+
+    const banner = document.createElement('div');
+    banner.className = 'maintenance-banner';
+    banner.setAttribute('role', 'alert');
+    banner.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="maintenance-icon">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-1-3a1 1 0 0 1-1-1V7a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1z" clip-rule="evenodd"/>
+        </svg>
+        <div class="maintenance-text">
+            <strong>Backend temporariamente indisponível</strong>
+            <span>A API está sendo migrada do Railway para uma VPS própria. A classificação de emails voltará em breve.</span>
+        </div>
+        <a href="https://github.com/Brunotlps/email-classifier" target="_blank" rel="noopener noreferrer" class="maintenance-link">Acompanhar progresso</a>
+    `;
+
+    const tabs = document.querySelector('.tabs');
+    tabs.parentElement.insertBefore(banner, tabs);
+
+    classifyTextBtn.disabled = true;
+    classifyFileBtn.disabled = true;
+}
+
+// Carrega histórico e inicializa botão de tema ao iniciar
+document.addEventListener('DOMContentLoaded', () => {
+    updateHistoryDisplay();
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    initMaintenanceBanner();
+});
 
 // ====================
 // TABS
@@ -124,11 +203,15 @@ document.addEventListener('DOMContentLoaded', updateHistoryDisplay);
 tabs.forEach(tab => {
     tab.addEventListener('click', () => {
         const tabName = tab.dataset.tab;
-        
+
         // Atualiza tabs
-        tabs.forEach(t => t.classList.remove('active'));
+        tabs.forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+        });
         tab.classList.add('active');
-        
+        tab.setAttribute('aria-selected', 'true');
+
         // Atualiza conteúdo
         tabContents.forEach(content => {
             content.classList.remove('active');
@@ -136,9 +219,8 @@ tabs.forEach(tab => {
                 content.classList.add('active');
             }
         });
-        
-        // Reset resultado
-        hideResult();
+
+        hideError();
     });
 });
 
@@ -158,18 +240,25 @@ emailText.addEventListener('input', () => {
 // ====================
 uploadArea.addEventListener('click', () => fileInput.click());
 
+uploadArea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput.click();
+    }
+});
+
 uploadArea.addEventListener('dragover', (e) => {
     e.preventDefault();
     uploadArea.style.borderColor = 'var(--primary)';
 });
 
 uploadArea.addEventListener('dragleave', () => {
-    uploadArea.style.borderColor = 'var(--gray-300)';
+    uploadArea.style.borderColor = '';
 });
 
 uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
-    uploadArea.style.borderColor = 'var(--gray-300)';
+    uploadArea.style.borderColor = '';
     
     const file = e.dataTransfer.files[0];
     handleFileSelect(file);
@@ -188,13 +277,13 @@ function handleFileSelect(file) {
     const extension = '.' + file.name.split('.').pop().toLowerCase();
     
     if (!validExtensions.includes(extension)) {
-        alert(`Formato não suportado. Use: ${validExtensions.join(', ')}`);
+        showError(`Formato não suportado. Use: ${validExtensions.join(', ')}`);
         return;
     }
-    
+
     // Valida tamanho (5MB)
     if (file.size > 5 * 1024 * 1024) {
-        alert('Arquivo muito grande. Máximo: 5MB');
+        showError('Arquivo muito grande. Máximo: 5MB');
         return;
     }
     
@@ -202,8 +291,8 @@ function handleFileSelect(file) {
     
     // Mostra arquivo selecionado
     selectedFile.innerHTML = `
-        <strong>Arquivo selecionado:</strong> ${file.name} 
-        <span style="color: var(--gray-500)">(${formatFileSize(file.size)})</span>
+        <strong>Arquivo selecionado:</strong> ${file.name}
+        <span style="color: var(--text-muted)">(${formatFileSize(file.size)})</span>
     `;
     selectedFile.classList.add('show');
     classifyFileBtn.disabled = false;
@@ -220,14 +309,11 @@ function formatFileSize(bytes) {
 // ====================
 classifyTextBtn.addEventListener('click', async () => {
     const content = emailText.value.trim();
-    
-    if (content.length < 10) {
-        alert('Email muito curto. Mínimo: 10 caracteres.');
-        return;
-    }
-    
+
+    hideError();
     showLoading();
-    
+    classifyTextBtn.disabled = true;
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/v1/classify`, {
             method: 'POST',
@@ -238,19 +324,23 @@ classifyTextBtn.addEventListener('click', async () => {
                 email_content: content
             })
         });
-        
+
         if (!response.ok) {
             throw new Error('Erro ao classificar email');
         }
-        
+
         const data = await response.json();
-        displayResult(data);
-        
+        displayResult(data, content);
+
     } catch (error) {
         console.error('Erro:', error);
-        alert('Erro ao classificar email. Verifique se a API está rodando.');
+        const isOffline = error instanceof TypeError;
+        showError(isOffline
+            ? 'Não foi possível conectar à API. Verifique sua conexão.'
+            : 'Erro ao classificar email. Tente novamente.');
     } finally {
         hideLoading();
+        classifyTextBtn.disabled = emailText.value.trim().length < 10;
     }
 });
 
@@ -259,38 +349,50 @@ classifyTextBtn.addEventListener('click', async () => {
 // ====================
 classifyFileBtn.addEventListener('click', async () => {
     if (!currentFile) return;
-    
+
+    hideError();
     showLoading();
-    
+    classifyFileBtn.disabled = true;
+
     try {
         const formData = new FormData();
         formData.append('file', currentFile);
-        
+
         const response = await fetch(`${API_BASE_URL}/api/v1/classify-file`, {
             method: 'POST',
             body: formData
         });
-        
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.detail || 'Erro ao classificar arquivo');
         }
-        
+
         const data = await response.json();
-        displayResult(data);
-        
+        displayResult(data, `[arquivo] ${currentFile.name}`);
+
+        // Limpa estado do arquivo após classificação bem-sucedida
+        currentFile = null;
+        selectedFile.innerHTML = '';
+        selectedFile.classList.remove('show');
+        fileInput.value = '';
+
     } catch (error) {
         console.error('Erro:', error);
-        alert(error.message || 'Erro ao classificar arquivo. Verifique se a API está rodando.');
+        const isOffline = error instanceof TypeError;
+        showError(isOffline
+            ? 'Não foi possível conectar à API. Verifique sua conexão.'
+            : error.message || 'Erro ao classificar arquivo. Tente novamente.');
     } finally {
         hideLoading();
+        classifyFileBtn.disabled = !currentFile;
     }
 });
 
 // ====================
 // EXIBIR RESULTADO
 // ====================
-function displayResult(data) {
+function displayResult(data, emailPreview) {
     const { classification, confidence, reasoning, suggestions } = data;
     
     // Badge de classificação
@@ -301,9 +403,13 @@ function displayResult(data) {
     // Barra de confiança
     const confidenceValue = document.getElementById('confidenceValue');
     const progressFill = document.getElementById('progressFill');
-    
+
     confidenceValue.textContent = `${(confidence * 100).toFixed(0)}%`;
     progressFill.style.width = `${confidence * 100}%`;
+    progressFill.className = 'progress-fill ' + (
+        confidence >= 0.75 ? 'confidence-high' :
+        confidence >= 0.50 ? 'confidence-medium' : 'confidence-low'
+    );
     
     // Reasoning
     const reasoningText = document.getElementById('reasoningText');
@@ -315,24 +421,44 @@ function displayResult(data) {
     if (suggestions && suggestions.length > 0) {
         suggestionsContainer.innerHTML = `
             <h3>Sugestões de Resposta</h3>
-            ${suggestions.map(s => `
+            ${suggestions.map((s, i) => `
                 <div class="suggestion-card">
                     <div class="suggestion-header">
                         <span class="suggestion-title">${s.title}</span>
-                        <span class="suggestion-tone">${s.tone}</span>
+                        <div class="suggestion-actions">
+                            <span class="suggestion-tone">${s.tone}</span>
+                            <button class="btn-copy" data-index="${i}" title="Copiar sugestão">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     <div class="suggestion-content">${s.content}</div>
                 </div>
             `).join('')}
         `;
         suggestionsContainer.style.display = 'block';
+
+        // Copia sugestão para clipboard via delegação de evento
+        suggestionsContainer.querySelectorAll('.btn-copy').forEach((btn, i) => {
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(suggestions[i].content).then(() => {
+                    btn.classList.add('copied');
+                    setTimeout(() => btn.classList.remove('copied'), 2000);
+                });
+            });
+        });
     } else {
-        suggestionsContainer.style.display = 'none';
+        const emptyMsg = classification === 'improdutivo'
+            ? 'Sugestões de resposta não são geradas para emails improdutivos.'
+            : 'Nenhuma sugestão gerada para este email.';
+        suggestionsContainer.innerHTML = `<p class="suggestions-empty">${emptyMsg}</p>`;
+        suggestionsContainer.style.display = 'block';
     }
     
     // Salva no histórico
-    const emailPreview = emailText.value || 'Arquivo enviado';
-    saveToHistory(emailPreview, data);
+    saveToHistory(emailPreview || '', data);
     
     // Mostra resultado
     showResult();

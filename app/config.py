@@ -59,3 +59,11 @@ class Settings(BaseSettings):
 
 # Instância global das configurações
 settings = Settings()
+
+
+"""
+Pontos fracos:
+
+Nenhum rate limiting (vulnerável a abuso)
+Nenhum logging estruturado
+"""
