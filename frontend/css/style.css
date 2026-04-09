@@ -124,6 +124,70 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Maintenance Banner */
+.maintenance-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    margin-bottom: 2rem;
+    padding: 1rem 1.25rem;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: 0.5rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.maintenance-icon {
+    color: var(--warning);
+    flex-shrink: 0;
+}
+
+.maintenance-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.maintenance-text strong {
+    color: var(--warning);
+    font-size: 0.9375rem;
+}
+
+.maintenance-text span {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.maintenance-link {
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--warning);
+    text-decoration: none;
+    white-space: nowrap;
+    opacity: 0.85;
+    transition: opacity 0.2s;
+}
+
+.maintenance-link:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+    .maintenance-banner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .maintenance-link {
+        align-self: flex-end;
+    }
+}
+
 /* Tabs */
 .tabs {
     display: flex;
