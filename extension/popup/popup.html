@@ -3,8 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <title>Email Classifier</title>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <p>Email Classifier — em desenvolvimento</p>
+  <header class="header">
+    <img class="header-logo" src="../assets/icon48.png" alt="">
+    <div class="header-text">
+      <div class="header-title">Email Classifier</div>
+      <div class="header-subtitle">Análise inteligente de emails</div>
+    </div>
+  </header>
+
+  <div class="status-bar">
+    <span class="status-dot" id="statusDot"></span>
+    <span class="status-label" id="statusLabel">Verificando...</span>
+  </div>
+
+  <section class="section">
+    <div class="section-title">Como usar</div>
+    <ol class="steps">
+      <li class="step">
+        <span class="step-num">1</span>
+        <span class="step-text">Abra um email no Gmail</span>
+      </li>
+      <li class="step">
+        <span class="step-num">2</span>
+        <span class="step-text">Clique no botão <strong>Analisar Email</strong></span>
+      </li>
+      <li class="step">
+        <span class="step-num">3</span>
+        <span class="step-text">Veja o resumo, categoria e sugestões de resposta</span>
+      </li>
+    </ol>
+  </section>
+
+  <footer class="footer">
+    <a class="footer-link" href="https://email-classifier-ruddy.vercel.app" target="_blank">
+      Abrir versão web →
+    </a>
+  </footer>
+
+  <script src="popup.js"></script>
 </body>
 </html>

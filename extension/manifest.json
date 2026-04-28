@@ -2,10 +2,11 @@
   "manifest_version": 3,
   "name": "Email Classifier",
   "version": "1.0.0",
-  "description": "Classifica emails no Gmail como produtivos ou improdutivos usando IA.",
+  "description": "Analisa emails no Gmail com IA: resumo, categoria, prioridade e sugestões de resposta.",
 
   "permissions": [
     "activeTab",
+    "tabs",
     "storage"
   ],
 
