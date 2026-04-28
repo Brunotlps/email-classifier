@@ -43,11 +43,17 @@ function injectClassifyButton(container) {
         console.log('[Email Classifier] Texto extraído:', emailText.slice(0, 100) + '...');
 
         try {
-            // Etapa 5: substituir pelo fetch real à API
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            console.log('[Email Classifier] (simulação) Classificação concluída.');
+            const response = await chrome.runtime.sendMessage({
+                type: 'CLASSIFY_EMAIL',
+                emailText,
+            });
+
+            if (!response.ok) throw new Error(response.error);
+
+            console.log('[Email Classifier] Resultado:', response.data);
+            // Etapa 6: renderizar o painel de resultado
         } catch (err) {
-            console.error('[Email Classifier] Erro:', err);
+            console.error('[Email Classifier] Erro na classificação:', err);
         } finally {
             setButtonLoading(button, false);
         }
