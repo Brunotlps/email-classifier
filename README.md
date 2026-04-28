@@ -8,7 +8,7 @@
 [![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat&logo=openai&logoColor=white)](https://openai.com/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Tests](https://img.shields.io/badge/Coverage-79%25-green?style=flat)]()
-[![Status](https://img.shields.io/badge/Backend-Migrating%20to%20VPS-yellow?style=flat)]()
+[![Status](https://img.shields.io/badge/Backend-Fly.io-active?style=flat)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
  
 ---
@@ -17,7 +17,7 @@
  
 **Frontend:** [email-classifier-ruddy.vercel.app](https://email-classifier-ruddy.vercel.app/)
  
-> ⚠️ The backend is currently offline while being migrated from Railway to a self-managed VPS. The frontend is fully navigable, and the full classification flow will be available again once the migration is complete.
+> ⚠️ The backend is currently being deployed to Fly.io. The frontend is fully navigable, and the full classification flow will be available again shortly.
  
 ---
  
@@ -61,7 +61,7 @@ The project started as a technical challenge for **AutoU**, and I decided to reb
  
 ### What's next
  
-- 🟡 **VPS migration** — moving backend from Railway to a self-managed Ubuntu VPS (in progress). The frontend will continue on Vercel.
+- 🟡 **Deploy to Fly.io** — moving backend to Fly.io as an intermediate step while a self-managed VPS is being set up. The frontend continues on Vercel.
 - 🟡 **Email client integration** — next major milestone after the migration: building a Gmail plugin (or equivalent integration) so classification happens where users actually read their email.
 - 🟢 **Customization** — allowing users to define their own categories and thresholds beyond the default productive/unproductive split.
  
@@ -91,7 +91,8 @@ The project started as a technical challenge for **AutoU**, and I decided to reb
 **Infrastructure**
 - Docker multi-stage build (builder + non-root runtime)
 - Docker Compose for local orchestration
-- Railway (backend, previous) → VPS (backend, in progress)
+- Fly.io (backend, active — temporary)
+- VPS self-managed (backend, future)
 - Vercel (frontend, active)
  
 ---
@@ -239,9 +240,9 @@ docker exec -it email_classifier_api pytest tests/ -m "not slow and not integrat
 ## Roadmap
  
 ### Short term
-- Complete VPS migration (Ubuntu server with Docker + Nginx + SSL)
-- Bring backend back online with the new infrastructure
-- Remove known tech debt in `app/api/routes.py` (replace residual `print()` calls with structured logging)
+- Deploy backend to Fly.io and bring the classification flow back online
+- Fix known tech debt: `AsyncOpenAI` client and residual `print()` calls in `app/api/routes.py`
+- Publish Chrome Extension MVP for Gmail classification
  
 ### Medium term
 - **Gmail plugin** — integrate directly with an existing email client so classification and reply suggestions happen where users actually read their email

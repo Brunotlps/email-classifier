@@ -1,3 +1,5 @@
+import structlog
+
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Request
 from app.models.schemas import EmailClassifyRequest, EmailClassifyResponse
 from app.services.classifier import EmailClassifier
@@ -6,6 +8,8 @@ from app.utils.file_parser import FileParser
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+logger = structlog.get_logger()
 
 router = APIRouter(prefix="/api/v1", tags=["Classification"])
 
@@ -58,7 +62,7 @@ async def classify_email(request: Request, email_request: EmailClassifyRequest):
             
             except Exception as e:
                 # Não será necessário parar as requisições em caso de falha ao gerar sugestões de respostas
-                print(f"Erro ao gerar sugestões: {e}")
+                logger.warning("suggestion_generation_failed", error=str(e))
                 suggestions = []
 
         response = EmailClassifyResponse(
@@ -156,7 +160,7 @@ async def classify_email_from_file(file: UploadFile = File(..., description="Arq
                     num_suggestions=2
                 )
             except Exception as e:
-                print(f"⚠️  Erro ao gerar sugestões: {e}")
+                logger.warning("suggestion_generation_failed", error=str(e))
                 suggestions = []
 
         response = EmailClassifyResponse(

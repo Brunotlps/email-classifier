@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 FastAPI REST API that classifies emails as **productive** or **unproductive** using LLMs (Ollama in dev, OpenAI in prod), with response suggestion generation and file upload support for `.txt`, `.eml`, and `.pdf`.
 
+**Current roadmap**: See `sprint-fase-1.md` (bug fixes + Fly.io deploy) and `sprint-fase-2.md` (Chrome Extension for Gmail).
+
 ---
 
 ## Commands
@@ -57,7 +59,31 @@ docker exec -it email_classifier_api pytest tests/ -m "not slow and not integrat
 
 ### AI provider for local development
 
-**Always use `AI_PROVIDER=ollama` for local development.** Never suggest OpenAI-based code or configurations unless the context is explicitly production or the user asks for it. OpenAI is only used in production (Railway).
+**Always use `AI_PROVIDER=ollama` for local development.** Never suggest OpenAI-based code or configurations unless the context is explicitly production or the user asks for it. OpenAI is only used in production (Fly.io).
+
+### Deploy to Fly.io (production backend)
+```bash
+# Install Fly.io CLI
+curl -L https://fly.io/install.sh | sh
+
+# Authenticate
+fly auth login
+
+# Deploy (fly.toml must exist in project root)
+fly deploy
+
+# View live logs
+fly logs
+
+# Check machine status
+fly status
+
+# Update a secret (env var) without redeploying
+fly secrets set KEY=value
+
+# Force redeploy after secrets change
+fly deploy
+```
 
 ### Ollama setup (required for local development)
 ```bash
@@ -117,10 +143,19 @@ email-classifier/
 │   ├── index.html                     # SPA with text input and file upload tabs
 │   ├── js/app.js                      # API calls + localStorage history
 │   └── css/style.css
+├── extension/                         # Chrome Extension (Fase 2 — ver sprint-fase-2.md)
+│   ├── manifest.json                  # Manifest V3 config
+│   ├── content_script.js             # Injetado no Gmail, lê email e injeta UI
+│   ├── background.js                 # Service worker — intermedia fetch para a API
+│   ├── popup/                        # UI do popup da extensão
+│   └── panel/                        # Painel injetado dentro do Gmail
 ├── docker-compose.yml
+├── fly.toml                           # Configuração de deploy no Fly.io
 ├── Dockerfile                         # Multi-stage build (builder + runtime, non-root user)
 ├── requirements.txt
 ├── pytest.ini
+├── sprint-fase-1.md                   # Estratégia: bug fixes + deploy Fly.io
+├── sprint-fase-2.md                   # Estratégia: Chrome Extension MVP
 └── .env.example
 ```
 
@@ -216,9 +251,10 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 
 Known issues to fix — do not perpetuate these patterns when writing new code:
 
-| Location | Issue | What to do instead |
-|---|---|---|
-| `app/api/routes.py` | `print()` calls used for logging | Use `structlog.get_logger()` like services do |
+| Location | Issue | What to do instead | Status |
+|---|---|---|---|
+| `app/api/routes.py` | `print()` calls used for logging | Use `structlog.get_logger()` like services do | Pendente (Fase 1) |
+| `app/utils/ai_client.py` | `OpenAIClient` instancia `OpenAI` síncrono com `await` — TypeError em runtime | Trocar para `AsyncOpenAI` do mesmo pacote | Pendente (Fase 1) |
 
 > When touching any of these files, fix the tech debt in the same PR if the change is small. Otherwise, leave a `# TODO:` comment referencing this section.
 
@@ -239,7 +275,17 @@ Copy `.env.example` to `.env`. Key variables:
 | `MAX_TOKENS` | `500` | Max tokens for AI responses |
 | `TEMPERATURE` | `0.7` | AI generation temperature |
 
-### Production (Railway + Vercel)
-- Set `ENVIRONMENT=production`, `AI_PROVIDER=openai`, `OPENAI_API_KEY`
-- Set `ALLOWED_ORIGINS` to the Vercel frontend URL
-- Update `frontend/js/app.js` with the Railway API base URL before deploying to Vercel
+### Production (Fly.io + Vercel)
+- Backend on **Fly.io** (`fly.toml` in project root, deploy via `fly deploy`)
+- Frontend on **Vercel** (`frontend/vercel.json` present, auto-deploy on push)
+- Set via `fly secrets set`: `ENVIRONMENT=production`, `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `ALLOWED_ORIGINS`
+- `ALLOWED_ORIGINS` must include the Vercel frontend URL and (after Fase 2) the Chrome extension origin: `chrome-extension://EXTENSION_ID`
+- `frontend/js/app.js` has `API_BASE_URL` pointing to `https://email-classifier-api.fly.dev` for non-localhost hostnames
+- `frontend/js/app.js` has `MAINTENANCE_MODE` flag — set to `false` when backend is live
+
+### Chrome Extension (Fase 2)
+- Lives in `extension/` directory — see `sprint-fase-2.md` for full strategy
+- Uses Manifest V3 with a service worker (`background.js`) that intermediates all API calls
+- Content script (`content_script.js`) reads Gmail email body via DOM and injects the result panel
+- Requires the Chrome extension origin to be in `ALLOWED_ORIGINS` on Fly.io
+- Published to Chrome Web Store (one-time $5 developer fee)
