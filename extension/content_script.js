@@ -10,6 +10,52 @@ function setButtonLoading(button, loading) {
     button.textContent = loading ? 'Classificando...' : 'Classificar Email';
 }
 
+function renderResultPanel(toolbar, data) {
+    const existing = toolbar.parentElement.querySelector('.ec-result-panel');
+    if (existing) existing.remove();
+
+    const isProductive = data.classification === 'produtivo';
+    const modifier = isProductive ? 'productive' : 'unproductive';
+    const badgeLabel = isProductive ? 'Produtivo' : 'Improdutivo';
+    const confidencePct = Math.round((data.confidence ?? 0) * 100);
+
+    const panel = document.createElement('div');
+    panel.className = 'ec-result-panel';
+
+    panel.innerHTML = `
+        <div class="ec-result-header">
+            <span class="ec-badge ec-badge--${modifier}">${badgeLabel}</span>
+            <span class="ec-confidence">Confiança: ${confidencePct}%</span>
+        </div>
+        <div class="ec-progress-bar-wrap">
+            <div class="ec-progress-bar-fill ec-progress-bar-fill--${modifier}"
+                 style="width: ${confidencePct}%"></div>
+        </div>
+        ${data.suggestions && data.suggestions.length > 0 ? `
+            <div class="ec-suggestions-title">Sugestões de resposta</div>
+            ${data.suggestions.map(s => `
+                <button class="ec-suggestion-item" data-text="${encodeURIComponent(s.content)}">
+                    <span class="ec-suggestion-tone">[${s.tone}]</span>${s.content}
+                </button>
+            `).join('')}
+            <div class="ec-copied-hint">Copiado para a área de transferência!</div>
+        ` : ''}
+    `;
+
+    toolbar.insertAdjacentElement('afterend', panel);
+
+    panel.querySelectorAll('.ec-suggestion-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const text = decodeURIComponent(btn.dataset.text);
+            navigator.clipboard.writeText(text).then(() => {
+                const hint = panel.querySelector('.ec-copied-hint');
+                hint.classList.add('ec-copied-hint--visible');
+                setTimeout(() => hint.classList.remove('ec-copied-hint--visible'), 2000);
+            });
+        });
+    });
+}
+
 function injectClassifyButton(container) {
     const toolbar = document.createElement('div');
     toolbar.className = 'ec-toolbar';
@@ -40,7 +86,6 @@ function injectClassifyButton(container) {
         }
 
         setButtonLoading(button, true);
-        console.log('[Email Classifier] Texto extraído:', emailText.slice(0, 100) + '...');
 
         try {
             const response = await chrome.runtime.sendMessage({
@@ -50,9 +95,12 @@ function injectClassifyButton(container) {
 
             if (!response.ok) throw new Error(response.error);
 
-            console.log('[Email Classifier] Resultado:', response.data);
-            // Etapa 6: renderizar o painel de resultado
+            renderResultPanel(toolbar, response.data);
         } catch (err) {
+            if (err.message.includes('Extension context invalidated')) {
+                button.textContent = 'Recarregue a página';
+                return;
+            }
             console.error('[Email Classifier] Erro na classificação:', err);
         } finally {
             setButtonLoading(button, false);

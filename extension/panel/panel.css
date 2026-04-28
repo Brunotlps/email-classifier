@@ -47,3 +47,122 @@
     font-size: 12px !important;
     color: #777 !important;
 }
+
+/* ============================================================
+   Painel de resultado
+   ============================================================ */
+
+.ec-result-panel {
+    margin-bottom: 8px !important;
+    padding: 12px !important;
+    background-color: #fff !important;
+    border: 1px solid #e8d5c4 !important;
+    border-radius: 8px !important;
+    font-family: 'Google Sans', Roboto, Arial, sans-serif !important;
+    font-size: 13px !important;
+    color: #333 !important;
+}
+
+.ec-result-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-bottom: 10px !important;
+}
+
+.ec-badge {
+    display: inline-block !important;
+    padding: 3px 10px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.3px !important;
+}
+
+.ec-badge--productive {
+    background-color: #d4edda !important;
+    color: #1a6b30 !important;
+}
+
+.ec-badge--unproductive {
+    background-color: #f8d7da !important;
+    color: #842029 !important;
+}
+
+.ec-confidence {
+    font-size: 12px !important;
+    color: #555 !important;
+}
+
+.ec-progress-bar-wrap {
+    height: 6px !important;
+    background-color: #eee !important;
+    border-radius: 3px !important;
+    overflow: hidden !important;
+    margin-bottom: 12px !important;
+}
+
+.ec-progress-bar-fill {
+    height: 100% !important;
+    border-radius: 3px !important;
+    transition: width 0.4s ease !important;
+}
+
+.ec-progress-bar-fill--productive {
+    background-color: #28a745 !important;
+}
+
+.ec-progress-bar-fill--unproductive {
+    background-color: #dc3545 !important;
+}
+
+/* ============================================================
+   Sugestões de resposta
+   ============================================================ */
+
+.ec-suggestions-title {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #555 !important;
+    margin-bottom: 6px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+.ec-suggestion-item {
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    padding: 8px 10px !important;
+    margin-bottom: 6px !important;
+    background-color: #f9f4ef !important;
+    border: 1px solid #e8d5c4 !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    color: #333 !important;
+    cursor: pointer !important;
+    font-family: inherit !important;
+    line-height: 1.4 !important;
+    transition: background-color 0.15s !important;
+}
+
+.ec-suggestion-item:hover {
+    background-color: #f0e6d8 !important;
+}
+
+.ec-suggestion-tone {
+    font-weight: 600 !important;
+    color: #c07b3a !important;
+    margin-right: 4px !important;
+}
+
+.ec-copied-hint {
+    font-size: 11px !important;
+    color: #28a745 !important;
+    margin-top: 4px !important;
+    display: none !important;
+}
+
+.ec-copied-hint--visible {
+    display: block !important;
+}
