@@ -1,9 +1,14 @@
 import structlog
 
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Request
-from app.models.schemas import EmailClassifyRequest, EmailClassifyResponse
+from app.models.schemas import (
+    EmailClassifyRequest, EmailClassifyResponse,
+    EmailAnalyzeRequest, EmailAnalysisResponse,
+    ResponseSuggestion,
+)
 from app.services.classifier import EmailClassifier
 from app.services.response_generator import ResponseGenerator
+from app.services.analyzer import EmailAnalyzer
 from app.utils.file_parser import FileParser
 
 from slowapi import Limiter
@@ -19,6 +24,7 @@ limiter = Limiter(key_func=get_remote_address)
 # Instanciando os serviços (usar injeção de dependência futuramente)
 classifier = EmailClassifier()
 response_generator = ResponseGenerator()
+analyzer = EmailAnalyzer()
 
 # Criação das rotas
 
@@ -86,6 +92,48 @@ async def classify_email(request: Request, email_request: EmailClassifyRequest):
             detail=f"Erro interno ao tentar classificar email: {str(e)}"
         )
     
+@limiter.limit("10/minute")
+@router.post(
+    "/analyze",
+    response_model=EmailAnalysisResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Analisa um email",
+    description="""
+        Analisa um email e retorna um resumo, categoria, prioridade e sugestões de resposta contextuais.
+
+        Em vez da classificação binária produtivo/improdutivo, este endpoint fornece uma análise
+        completa e acionável do email em uma única chamada à IA.
+
+        Suporta emails em **português (PT-BR)** e **inglês**."""
+)
+async def analyze_email(request: Request, email_request: EmailAnalyzeRequest):
+    try:
+        result = await analyzer.analyze(email_request.email_content)
+
+        suggestions = [
+            ResponseSuggestion(
+                title=s.get("title", ""),
+                content=s.get("content", ""),
+                tone=s.get("tone", "cordial"),
+            )
+            for s in result.get("suggestions", [])
+            if s.get("content", "").strip()
+        ]
+
+        return EmailAnalysisResponse(
+            summary=result["summary"],
+            category=result["category"],
+            priority=result["priority"],
+            action_required=result["action_required"],
+            suggestions=suggestions,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
 @router.get(
     "/health",
     summary="Health check da API de classificação",

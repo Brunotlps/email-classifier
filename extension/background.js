@@ -1,9 +1,9 @@
-const API_URL = 'https://email-classifier-api.fly.dev/api/v1/classify';
+const API_BASE = 'https://email-classifier-api.fly.dev/api/v1';
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message.type !== 'CLASSIFY_EMAIL') return false;
+    if (message.type !== 'ANALYZE_EMAIL') return false;
 
-    fetch(API_URL, {
+    fetch(`${API_BASE}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email_content: message.emailText }),
@@ -15,7 +15,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         .then(data => sendResponse({ ok: true, data }))
         .catch(err => sendResponse({ ok: false, error: err.message }));
 
-    // Retornar true mantém o canal aberto para a resposta assíncrona
     return true;
 });
 
