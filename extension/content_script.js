@@ -1,5 +1,15 @@
 const PROCESSED_ATTR = 'data-classifier-seen';
 
+function extractEmailText(container) {
+    const emailBody = container.querySelector('div.a3s');
+    return emailBody ? emailBody.innerText.trim() : '';
+}
+
+function setButtonLoading(button, loading) {
+    button.disabled = loading;
+    button.textContent = loading ? 'Classificando...' : 'Classificar Email';
+}
+
 function injectClassifyButton(container) {
     const toolbar = document.createElement('div');
     toolbar.className = 'ec-toolbar';
@@ -15,8 +25,6 @@ function injectClassifyButton(container) {
     toolbar.appendChild(button);
     toolbar.appendChild(label);
 
-    // Ancora a toolbar imediatamente antes do corpo do email (div.a3s)
-    // Isso evita conflitos com o layout interno do Gmail no container externo
     const emailBody = container.querySelector('div.a3s');
     if (emailBody) {
         emailBody.parentElement.insertBefore(toolbar, emailBody);
@@ -24,9 +32,25 @@ function injectClassifyButton(container) {
         container.prepend(toolbar);
     }
 
-    button.addEventListener('click', () => {
-        console.log('[Email Classifier] Botão clicado!');
-        // Etapa 5: aqui chamaremos a API
+    button.addEventListener('click', async () => {
+        const emailText = extractEmailText(container);
+        if (!emailText) {
+            console.warn('[Email Classifier] Texto do email não encontrado.');
+            return;
+        }
+
+        setButtonLoading(button, true);
+        console.log('[Email Classifier] Texto extraído:', emailText.slice(0, 100) + '...');
+
+        try {
+            // Etapa 5: substituir pelo fetch real à API
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            console.log('[Email Classifier] (simulação) Classificação concluída.');
+        } catch (err) {
+            console.error('[Email Classifier] Erro:', err);
+        } finally {
+            setButtonLoading(button, false);
+        }
     });
 }
 
