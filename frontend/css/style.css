@@ -14,20 +14,20 @@
     --danger: #f87171;
     --warning: #fbbf24;
 
-    /* Piano Black Background Colors */
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #141414;
-    --bg-tertiary: #1e1e1e;
-    --bg-card: #141414;
+    /* Dark Navy Background Colors */
+    --bg-primary: #0d0f1c;
+    --bg-secondary: #13162a;
+    --bg-tertiary: #1b2038;
+    --bg-card: #13162a;
 
     /* Neutral Text Colors */
-    --text-primary: #f0f0f0;
-    --text-secondary: #b8b8b8;
-    --text-muted: #707070;
+    --text-primary: #eef0f8;
+    --text-secondary: #b0b8d4;
+    --text-muted: #6b7599;
 
     /* Border Colors */
-    --border-color: #252525;
-    --border-hover: #353535;
+    --border-color: #252d4a;
+    --border-hover: #333d61;
 }
 
 [data-theme="light"] {
