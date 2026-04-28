@@ -25,8 +25,8 @@ logger = structlog.get_logger()
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 
 app = FastAPI(
-    title="Email Classifier API",
-    description="Classificador de emails como produtivos/improdutivos e gera sugestões de respostas",
+    title="BriskMail API",
+    description="Analisa emails com IA: resumo, categoria, prioridade e sugestões de resposta contextuais.",
     version="1.0.0",
     docs_url="/docs", # Swagger
     redoc_url="/redoc" # ReDoc

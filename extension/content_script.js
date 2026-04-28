@@ -68,7 +68,7 @@ function injectClassifyButton(container) {
 
     const label = document.createElement('span');
     label.className = 'ec-toolbar-label';
-    label.textContent = 'Email Classifier';
+    label.textContent = 'BriskMail';
 
     toolbar.appendChild(button);
     toolbar.appendChild(label);

@@ -104,7 +104,7 @@ body {
   min-width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #c07b3a;
+  background: #211f60;
   color: #fff;
   font-size: 11px;
   font-weight: 600;
@@ -117,7 +117,7 @@ body {
 }
 
 .step-text strong {
-  color: #c07b3a;
+  color: #211f60;
 }
 
 /* Footer */
@@ -130,7 +130,7 @@ body {
 
 .footer-link {
   font-size: 12px;
-  color: #c07b3a;
+  color: #211f60;
   text-decoration: none;
   font-weight: 500;
 }

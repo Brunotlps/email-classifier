@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Email Classifier",
-  "version": "1.0.0",
+  "name": "BriskMail",
+  "version": "1.1.0",
   "description": "Analisa emails no Gmail com IA: resumo, categoria, prioridade e sugestões de resposta.",
 
   "permissions": [

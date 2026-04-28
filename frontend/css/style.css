@@ -6,10 +6,10 @@
 }
 
 :root {
-    /* Piano Black + Brown Theme */
-    --primary: #c07b3a;
-    --primary-dark: #a8642e;
-    --secondary: #7b4718;
+    /* BriskMail Navy Theme */
+    --primary: #211f60;
+    --primary-dark: #1a1850;
+    --secondary: #3730a3;
     --success: #34d399;
     --danger: #f87171;
     --warning: #fbbf24;
@@ -337,7 +337,7 @@ textarea:focus {
 
 .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(192, 123, 58, 0.3);
+    box-shadow: 0 10px 20px rgba(33, 31, 96, 0.3);
 }
 
 .btn:disabled {
