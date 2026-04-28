@@ -29,8 +29,6 @@ function toggleTheme() {
     applyTheme(saved);
 })();
 
-// Configuração da API
-// Em produção, use a URL do Railway. Em desenvolvimento, localhost.
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:8001'
     : 'https://email-classifier-api.fly.dev';
@@ -55,6 +53,9 @@ const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const historyList = document.getElementById('historyList');
 const errorBanner = document.getElementById('errorBanner');
 const errorMessage = document.getElementById('errorMessage');
+
+const PRIORITY_LABEL = { alta: '● Alta prioridade', normal: '● Prioridade normal', baixa: '● Baixa prioridade' };
+const PRIORITY_CLASS = { alta: 'priority-tag--high', normal: 'priority-tag--normal', baixa: 'priority-tag--low' };
 
 document.getElementById('errorClose').addEventListener('click', hideError);
 
@@ -81,19 +82,16 @@ function saveToHistory(emailPreview, result) {
         const newItem = {
             id: Date.now(),
             date: new Date().toISOString(),
-            emailPreview: emailPreview.substring(0, 200), // Limita preview
-            classification: result.classification,
-            confidence: result.confidence,
-            reasoning: result.reasoning
+            emailPreview: emailPreview.substring(0, 200),
+            category: result.category,
+            priority: result.priority,
+            action_required: result.action_required,
+            summary: result.summary,
         };
-        
-        history.unshift(newItem); // Adiciona no início
-        
-        // Limita a 50 itens
-        if (history.length > MAX_HISTORY_ITEMS) {
-            history.pop();
-        }
-        
+
+        history.unshift(newItem);
+        if (history.length > MAX_HISTORY_ITEMS) history.pop();
+
         localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
         updateHistoryDisplay();
     } catch (error) {
@@ -138,22 +136,23 @@ function updateHistoryDisplay() {
     historyList.innerHTML = history.map(item => {
         const date = new Date(item.date);
         const formattedDate = date.toLocaleString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
         });
-        
+        const priorityClass = PRIORITY_CLASS[item.priority] || 'priority-tag--normal';
+        const priorityLabel = PRIORITY_LABEL[item.priority] || item.priority || '';
+        const actionLabel = item.action_required ? 'Requer resposta' : 'Sem ação necessária';
+
         return `
             <div class="history-item">
                 <div class="history-item-header">
                     <span class="history-item-date">${formattedDate}</span>
-                    <span class="badge ${item.classification}">${item.classification}</span>
+                    <span class="badge category-badge">${item.category || '—'}</span>
                 </div>
                 <div class="history-item-preview">${item.emailPreview}</div>
                 <div class="history-item-footer">
-                    <span class="history-confidence">Confiança: ${(item.confidence * 100).toFixed(0)}%</span>
+                    <span class="priority-tag ${priorityClass}">${priorityLabel}</span>
+                    <span class="action-tag ${item.action_required ? 'action-tag--yes' : 'action-tag--no'}">${actionLabel}</span>
                 </div>
             </div>
         `;
@@ -315,14 +314,10 @@ classifyTextBtn.addEventListener('click', async () => {
     classifyTextBtn.disabled = true;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/classify`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/analyze`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email_content: content
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email_content: content }),
         });
 
         if (!response.ok) {
@@ -358,7 +353,7 @@ classifyFileBtn.addEventListener('click', async () => {
         const formData = new FormData();
         formData.append('file', currentFile);
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/classify-file`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/classify-file`, { // arquivo ainda usa /classify-file
             method: 'POST',
             body: formData
         });
@@ -393,31 +388,27 @@ classifyFileBtn.addEventListener('click', async () => {
 // EXIBIR RESULTADO
 // ====================
 function displayResult(data, emailPreview) {
-    const { classification, confidence, reasoning, suggestions } = data;
-    
-    // Badge de classificação
-    const badge = document.getElementById('classificationBadge');
-    badge.textContent = classification;
-    badge.className = `badge ${classification}`;
-    
-    // Barra de confiança
-    const confidenceValue = document.getElementById('confidenceValue');
-    const progressFill = document.getElementById('progressFill');
+    const { summary, category, priority, action_required, suggestions } = data;
 
-    confidenceValue.textContent = `${(confidence * 100).toFixed(0)}%`;
-    progressFill.style.width = `${confidence * 100}%`;
-    progressFill.className = 'progress-fill ' + (
-        confidence >= 0.75 ? 'confidence-high' :
-        confidence >= 0.50 ? 'confidence-medium' : 'confidence-low'
-    );
-    
-    // Reasoning
-    const reasoningText = document.getElementById('reasoningText');
-    reasoningText.textContent = reasoning;
-    
-    // Sugestões (se houver)
+    // Badge de categoria
+    const categoryBadge = document.getElementById('categoryBadge');
+    categoryBadge.textContent = category;
+
+    // Tags de prioridade e ação
+    const priorityTag = document.getElementById('priorityTag');
+    priorityTag.textContent = PRIORITY_LABEL[priority] || priority;
+    priorityTag.className = `priority-tag ${PRIORITY_CLASS[priority] || 'priority-tag--normal'}`;
+
+    const actionTag = document.getElementById('actionTag');
+    actionTag.textContent = action_required ? 'Requer resposta' : 'Sem ação necessária';
+    actionTag.className = `action-tag ${action_required ? 'action-tag--yes' : 'action-tag--no'}`;
+
+    // Resumo
+    document.getElementById('summaryText').textContent = summary;
+
+    // Sugestões
     const suggestionsContainer = document.getElementById('suggestionsContainer');
-    
+
     if (suggestions && suggestions.length > 0) {
         suggestionsContainer.innerHTML = `
             <h3>Sugestões de Resposta</h3>
@@ -440,7 +431,6 @@ function displayResult(data, emailPreview) {
         `;
         suggestionsContainer.style.display = 'block';
 
-        // Copia sugestão para clipboard via delegação de evento
         suggestionsContainer.querySelectorAll('.btn-copy').forEach((btn, i) => {
             btn.addEventListener('click', () => {
                 navigator.clipboard.writeText(suggestions[i].content).then(() => {
@@ -450,17 +440,11 @@ function displayResult(data, emailPreview) {
             });
         });
     } else {
-        const emptyMsg = classification === 'improdutivo'
-            ? 'Sugestões de resposta não são geradas para emails improdutivos.'
-            : 'Nenhuma sugestão gerada para este email.';
-        suggestionsContainer.innerHTML = `<p class="suggestions-empty">${emptyMsg}</p>`;
+        suggestionsContainer.innerHTML = `<p class="suggestions-empty">Nenhuma sugestão gerada para este email.</p>`;
         suggestionsContainer.style.display = 'block';
     }
-    
-    // Salva no histórico
+
     saveToHistory(emailPreview || '', data);
-    
-    // Mostra resultado
     showResult();
 }
 
