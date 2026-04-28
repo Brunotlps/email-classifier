@@ -1,1 +1,49 @@
-/* Estilos do painel — serão implementados na Etapa 6 */
+/* ============================================================
+   Toolbar — barra injetada no topo de cada email aberto
+   ============================================================ */
+
+.ec-toolbar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+    margin-bottom: 8px !important;
+    background-color: #fdf6f0 !important;
+    border: 1px solid #e8d5c4 !important;
+    border-radius: 8px !important;
+    font-family: 'Google Sans', Roboto, Arial, sans-serif !important;
+}
+
+/* ============================================================
+   Botão principal de classificação
+   ============================================================ */
+
+.ec-classify-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 6px 14px !important;
+    background-color: #c07b3a !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+    font-family: inherit !important;
+}
+
+.ec-classify-btn:hover {
+    background-color: #a8642e !important;
+}
+
+.ec-classify-btn:disabled {
+    background-color: #ccc !important;
+    cursor: not-allowed !important;
+}
+
+.ec-toolbar-label {
+    font-size: 12px !important;
+    color: #777 !important;
+}
