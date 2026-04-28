@@ -1,9 +1,14 @@
 import structlog
 
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Request
-from app.models.schemas import EmailClassifyRequest, EmailClassifyResponse
+from app.models.schemas import (
+    EmailClassifyRequest, EmailClassifyResponse,
+    EmailAnalyzeRequest, EmailAnalysisResponse,
+    ResponseSuggestion,
+)
 from app.services.classifier import EmailClassifier
 from app.services.response_generator import ResponseGenerator
+from app.services.analyzer import EmailAnalyzer
 from app.utils.file_parser import FileParser
 
 from slowapi import Limiter
@@ -19,6 +24,7 @@ limiter = Limiter(key_func=get_remote_address)
 # Instanciando os serviços (usar injeção de dependência futuramente)
 classifier = EmailClassifier()
 response_generator = ResponseGenerator()
+analyzer = EmailAnalyzer()
 
 # Criação das rotas
 
@@ -86,6 +92,48 @@ async def classify_email(request: Request, email_request: EmailClassifyRequest):
             detail=f"Erro interno ao tentar classificar email: {str(e)}"
         )
     
+@limiter.limit("10/minute")
+@router.post(
+    "/analyze",
+    response_model=EmailAnalysisResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Analisa um email",
+    description="""
+        Analisa um email e retorna um resumo, categoria, prioridade e sugestões de resposta contextuais.
+
+        Em vez da classificação binária produtivo/improdutivo, este endpoint fornece uma análise
+        completa e acionável do email em uma única chamada à IA.
+
+        Suporta emails em **português (PT-BR)** e **inglês**."""
+)
+async def analyze_email(request: Request, email_request: EmailAnalyzeRequest):
+    try:
+        result = await analyzer.analyze(email_request.email_content)
+
+        suggestions = [
+            ResponseSuggestion(
+                title=s.get("title", ""),
+                content=s.get("content", ""),
+                tone=s.get("tone", "cordial"),
+            )
+            for s in result.get("suggestions", [])
+            if s.get("content", "").strip()
+        ]
+
+        return EmailAnalysisResponse(
+            summary=result["summary"],
+            category=result["category"],
+            priority=result["priority"],
+            action_required=result["action_required"],
+            suggestions=suggestions,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
 @router.get(
     "/health",
     summary="Health check da API de classificação",
@@ -104,84 +152,48 @@ async def classification_health():
 
 @router.post(
     "/classify-file",
-    response_model=EmailClassifyResponse,
+    response_model=EmailAnalysisResponse,
     status_code=status.HTTP_200_OK,
-    summary="Classifica email a partir de arquivo",
+    summary="Analisa email a partir de arquivo",
     description="""
-        Classifica um email enviado como arquivo (.txt, .eml ou .pdf).
-        
-        Formatos suportados:
-        - **.txt**: Arquivo de texto simples
-        - **.eml**: Formato padrão de email (exportado de clientes de email)
-        - **.pdf**: Arquivo PDF contendo texto
-        
-        Tamanho máximo: 5MB
-        
-        Retorna a mesma estrutura do endpoint /classify.
-        """
+        Analisa um email enviado como arquivo (.txt, .eml ou .pdf).
+
+        Formatos suportados: **.txt**, **.eml**, **.pdf** — tamanho máximo 5MB.
+
+        Retorna a mesma estrutura do endpoint /analyze."""
 )
 async def classify_email_from_file(file: UploadFile = File(..., description="Arquivo contendo o email (.txt, .eml ou .pdf)")):
-    """
-    Endpoint para classificação de email a partir de arquivo.
-    
-    Args:
-            file: Arquivo enviado via upload
-            
-    Returns:
-            EmailClassifyResponse com classificação e sugestões
-            
-    Raises:
-            HTTPException 400: Se arquivo inválido ou formato não suportado
-            HTTPException 500: Se erro na IA
-    """
-
     try:
-        # 1. Lê conteúdo do arquivo
         content = await file.read()
-        
-        # 2. Parse baseado no formato
+
         try:
             email_content = FileParser.parse(file.filename, content)
         except ValueError as e:
-            raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=str(e)
-            )
-        
-        # 3. Classifica o email (mesma lógica do /classify)
-        classification_result = await classifier.classify(email_content)
-        
-        # 4. Gera sugestões se produtivo
-        suggestions = []
-        if classification_result["classification"] == "produtivo":
-            try:
-                suggestions = await response_generator.generate_suggestions(
-                    email_content=email_content,
-                    num_suggestions=2
-                )
-            except Exception as e:
-                logger.warning("suggestion_generation_failed", error=str(e))
-                suggestions = []
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-        response = EmailClassifyResponse(
-            classification=classification_result["classification"],
-            confidence=classification_result["confidence"],
-            reasoning=classification_result["reasoning"],
-            suggestions=suggestions
+        result = await analyzer.analyze(email_content)
+
+        suggestions = [
+            ResponseSuggestion(
+                title=s.get("title", ""),
+                content=s.get("content", ""),
+                tone=s.get("tone", "cordial"),
+            )
+            for s in result.get("suggestions", [])
+            if s.get("content", "").strip()
+        ]
+
+        return EmailAnalysisResponse(
+            summary=result["summary"],
+            category=result["category"],
+            priority=result["priority"],
+            action_required=result["action_required"],
+            suggestions=suggestions,
         )
-        
-        return response
-            
+
     except HTTPException:
-        # Re-raise HTTPException para não capturar no except genérico
         raise
     except ValueError as e:
-        raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Erro ao processar arquivo: {str(e)}"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Erro interno ao classificar email: {str(e)}"
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

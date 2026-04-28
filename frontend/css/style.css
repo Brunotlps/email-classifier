@@ -785,6 +785,69 @@ textarea:focus {
     color: var(--text-muted);
 }
 
+/* Category badge (result + history) */
+.badge.category-badge {
+    background: var(--primary);
+    color: var(--bg-primary);
+    text-transform: none;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+/* Result meta row (priority + action) */
+.result-meta {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+/* Priority tag */
+.priority-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.priority-tag--high {
+    background: rgba(248, 113, 113, 0.15);
+    color: #f87171;
+}
+
+.priority-tag--normal {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+}
+
+.priority-tag--low {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+}
+
+/* Action tag */
+.action-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.action-tag--yes {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+}
+
+.action-tag--no {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+}
+
 /* About Tab */
 .about-section {
     margin-bottom: 2.5rem;

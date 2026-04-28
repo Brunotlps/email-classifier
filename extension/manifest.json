@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Email Classifier",
+  "version": "1.0.0",
+  "description": "Classifica emails no Gmail como produtivos ou improdutivos usando IA.",
+
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+
+  "host_permissions": [
+    "https://mail.google.com/*",
+    "https://email-classifier-api.fly.dev/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["content_script.js"],
+      "css": ["panel/panel.css"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  }
+}
