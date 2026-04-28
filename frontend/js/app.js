@@ -33,11 +33,11 @@ function toggleTheme() {
 // Em produção, use a URL do Railway. Em desenvolvimento, localhost.
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:8001'
-    : 'https://email-classifier-production-947c.up.railway.app';
+    : 'https://email-classifier-api.fly.dev';
 
 // Defina como true enquanto o backend estiver indisponível.
 // Quando o backend voltar, mude para false e faça push.
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 // Elementos DOM
 const tabs = document.querySelectorAll('.tab');
