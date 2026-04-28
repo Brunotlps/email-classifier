@@ -124,8 +124,8 @@ function updateHistoryDisplay() {
                     <path d="M32 56C45.2548 56 56 45.2548 56 32C56 18.7452 45.2548 8 32 8C18.7452 8 8 18.7452 8 32C8 45.2548 18.7452 56 32 56Z" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
                     <path d="M30 20V34L40 42" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
                 </svg>
-                <p>Nenhuma classificação ainda</p>
-                <p class="empty-hint">Classifique emails para ver o histórico aqui</p>
+                <p>Nenhuma análise ainda</p>
+                <p class="empty-hint">Analise emails para ver o histórico aqui</p>
             </div>
         `;
         return;
