@@ -7,7 +7,7 @@ import httpx, json, structlog
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 from app.config import settings
-from openai import OpenAI, RateLimitError, AuthenticationError, APIError
+from openai import AsyncOpenAI, RateLimitError, AuthenticationError, APIError
 
 
 logger = structlog.getLogger()
@@ -88,8 +88,8 @@ class OpenAIClient(AIClient):
     def __init__(self):
         
         
-        self._validate_api_key() 
-        self.client = OpenAI(api_key=settings.openai_api_key)
+        self._validate_api_key()
+        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
         logger.info("openai_client_initialized", model=settings.openai_model, key=_mask_api_key(settings.openai_api_key))  
     
         # self.api_key = settings.openai_api_key

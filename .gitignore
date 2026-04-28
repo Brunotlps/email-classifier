@@ -61,6 +61,10 @@ htmlcov/
 .tox/
 test_ai.py
 
+# Planning docs (local only)
+sprint-fase-1.md
+sprint-fase-2.md
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
