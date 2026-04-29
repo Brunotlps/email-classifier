@@ -108,7 +108,7 @@ async def classify_email(request: Request, email_request: EmailClassifyRequest):
 )
 async def analyze_email(request: Request, email_request: EmailAnalyzeRequest):
     try:
-        result = await analyzer.analyze(email_request.email_content)
+        result = await analyzer.analyze(email_request.email_content, email_request.language)
 
         suggestions = [
             ResponseSuggestion(

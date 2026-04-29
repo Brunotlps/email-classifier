@@ -125,14 +125,15 @@ class EmailAnalyzer:
     async def _call_ai(self, user_prompt: str) -> str:
         return await self.ai_client.generate(user_prompt, _SYSTEM_PROMPT)
 
-    async def analyze(self, email_content: str) -> Dict[str, Any]:
-        cache_key = hashlib.sha256(email_content.encode()).hexdigest()
+    async def analyze(self, email_content: str, language: str = "pt") -> Dict[str, Any]:
+        cache_key = hashlib.sha256(f"{language}:{email_content}".encode()).hexdigest()
 
         if cache_key in self.cache:
             logger.info("analyzer_cache_hit", key=cache_key[:8])
             return self.cache[cache_key]
 
-        user_prompt = f"Analyze this email:\n\n---\n{email_content.strip()}\n---"
+        lang_instruction = "Respond in Portuguese (PT-BR)." if language == "pt" else "Respond in English."
+        user_prompt = f"{lang_instruction}\n\nAnalyze this email:\n\n---\n{email_content.strip()}\n---"
         raw = await self._call_ai(user_prompt)
         result = self._parse(raw)
 

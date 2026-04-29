@@ -19,8 +19,39 @@ body {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: #fdf6f0;
-  border-bottom: 1px solid #e8d5c4;
+  background: #f0f2f8;
+  border-bottom: 1px solid #c5c9e8;
+}
+
+/* Language toggle */
+
+.lang-toggle {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.lang-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #c5c9e8;
+  border-radius: 4px;
+  background: #fff;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lang-btn:hover {
+  border-color: #211f60;
+  color: #211f60;
+}
+
+.lang-btn--active {
+  background: #211f60;
+  border-color: #211f60;
+  color: #fff;
 }
 
 .header-logo {

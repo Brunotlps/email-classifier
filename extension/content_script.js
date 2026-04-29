@@ -1,6 +1,54 @@
-const PROCESSED_ATTR = 'data-classifier-seen';
+const PROCESSED_ATTR = 'data-briskmail-seen';
 
-const PRIORITY_LABEL = { alta: 'Alta prioridade', normal: 'Prioridade normal', baixa: 'Baixa prioridade' };
+const STRINGS = {
+    pt: {
+        button: 'Analisar Email',
+        buttonLoading: 'Analisando...',
+        buttonReload: 'Recarregue a página',
+        label: 'BriskMail',
+        priorityLabel: { alta: 'Alta prioridade', normal: 'Prioridade normal', baixa: 'Baixa prioridade' },
+        actionRequired: 'Requer resposta',
+        actionNotRequired: 'Sem ação necessária',
+        suggestionsTitle: 'Sugestões de resposta',
+        copied: 'Copiado para a área de transferência!',
+        categoryMap: {
+            'Proposta Comercial': 'Proposta Comercial',
+            'Reunião / Agenda': 'Reunião / Agenda',
+            'Suporte Técnico': 'Suporte Técnico',
+            'Cobrança / Pagamento': 'Cobrança / Pagamento',
+            'Newsletter / Marketing': 'Newsletter / Marketing',
+            'Feedback / Avaliação': 'Feedback / Avaliação',
+            'Pessoal / Casual': 'Pessoal / Casual',
+            'Alerta / Notificação': 'Alerta / Notificação',
+            'Candidatura / RH': 'Candidatura / RH',
+            'Outro': 'Outro',
+        },
+    },
+    en: {
+        button: 'Analyze Email',
+        buttonLoading: 'Analyzing...',
+        buttonReload: 'Reload the page',
+        label: 'BriskMail',
+        priorityLabel: { alta: 'High priority', normal: 'Normal priority', baixa: 'Low priority' },
+        actionRequired: 'Action required',
+        actionNotRequired: 'No action needed',
+        suggestionsTitle: 'Reply suggestions',
+        copied: 'Copied to clipboard!',
+        categoryMap: {
+            'Proposta Comercial': 'Business Proposal',
+            'Reunião / Agenda': 'Meeting / Schedule',
+            'Suporte Técnico': 'Technical Support',
+            'Cobrança / Pagamento': 'Billing / Payment',
+            'Newsletter / Marketing': 'Newsletter / Marketing',
+            'Feedback / Avaliação': 'Feedback / Review',
+            'Pessoal / Casual': 'Personal / Casual',
+            'Alerta / Notificação': 'Alert / Notification',
+            'Candidatura / RH': 'Job Application / HR',
+            'Outro': 'Other',
+        },
+    },
+};
+
 const PRIORITY_CLASS = { alta: 'ec-priority--high', normal: 'ec-priority--normal', baixa: 'ec-priority--low' };
 
 function extractEmailText(container) {
@@ -8,12 +56,12 @@ function extractEmailText(container) {
     return emailBody ? emailBody.innerText.trim() : '';
 }
 
-function setButtonLoading(button, loading) {
+function setButtonLoading(button, loading, s) {
     button.disabled = loading;
-    button.textContent = loading ? 'Analisando...' : 'Analisar Email';
+    button.textContent = loading ? s.buttonLoading : s.button;
 }
 
-function renderResultPanel(toolbar, data) {
+function renderResultPanel(toolbar, data, s) {
     const existing = toolbar.parentElement.querySelector('.ec-result-panel');
     if (existing) existing.remove();
 
@@ -21,27 +69,28 @@ function renderResultPanel(toolbar, data) {
     panel.className = 'ec-result-panel';
 
     const hasSuggestions = data.suggestions && data.suggestions.length > 0;
-    const actionLabel = data.action_required ? 'Requer resposta' : 'Sem ação necessária';
     const priorityClass = PRIORITY_CLASS[data.priority] || 'ec-priority--normal';
-    const priorityLabel = PRIORITY_LABEL[data.priority] || data.priority;
+    const priorityLabel = s.priorityLabel[data.priority] || data.priority;
+    const actionLabel = data.action_required ? s.actionRequired : s.actionNotRequired;
+    const categoryLabel = s.categoryMap[data.category] || data.category;
 
     panel.innerHTML = `
         <div class="ec-result-header">
-            <span class="ec-category-badge">${data.category}</span>
+            <span class="ec-category-badge">${categoryLabel}</span>
             <span class="ec-priority ${priorityClass}">${priorityLabel}</span>
             <span class="ec-action-tag ${data.action_required ? 'ec-action-tag--yes' : 'ec-action-tag--no'}">${actionLabel}</span>
         </div>
         <p class="ec-summary">${data.summary}</p>
         ${hasSuggestions ? `
-            <div class="ec-suggestions-title">Sugestões de resposta</div>
-            ${data.suggestions.map(s => `
-                <button class="ec-suggestion-item" data-text="${encodeURIComponent(s.content)}">
-                    <span class="ec-suggestion-tone">[${s.tone}]</span>
-                    <span class="ec-suggestion-title">${s.title}</span>
-                    <span class="ec-suggestion-preview">${s.content}</span>
+            <div class="ec-suggestions-title">${s.suggestionsTitle}</div>
+            ${data.suggestions.map(sg => `
+                <button class="ec-suggestion-item" data-text="${encodeURIComponent(sg.content)}">
+                    <span class="ec-suggestion-tone">[${sg.tone}]</span>
+                    <span class="ec-suggestion-title">${sg.title}</span>
+                    <span class="ec-suggestion-preview">${sg.content}</span>
                 </button>
             `).join('')}
-            <div class="ec-copied-hint">Copiado para a área de transferência!</div>
+            <div class="ec-copied-hint">${s.copied}</div>
         ` : ''}
     `;
 
@@ -58,17 +107,19 @@ function renderResultPanel(toolbar, data) {
     });
 }
 
-function injectClassifyButton(container) {
+function injectClassifyButton(container, lang) {
+    const s = STRINGS[lang] || STRINGS.pt;
+
     const toolbar = document.createElement('div');
     toolbar.className = 'ec-toolbar';
 
     const button = document.createElement('button');
     button.className = 'ec-classify-btn';
-    button.textContent = 'Analisar Email';
+    button.textContent = s.button;
 
     const label = document.createElement('span');
     label.className = 'ec-toolbar-label';
-    label.textContent = 'BriskMail';
+    label.textContent = s.label;
 
     toolbar.appendChild(button);
     toolbar.appendChild(label);
@@ -83,48 +134,50 @@ function injectClassifyButton(container) {
     button.addEventListener('click', async () => {
         const emailText = extractEmailText(container);
         if (!emailText) {
-            console.warn('[Email Classifier] Texto do email não encontrado.');
+            console.warn('[BriskMail] Texto do email não encontrado.');
             return;
         }
 
-        setButtonLoading(button, true);
+        setButtonLoading(button, true, s);
 
         try {
             const response = await chrome.runtime.sendMessage({
                 type: 'ANALYZE_EMAIL',
                 emailText,
+                language: lang,
             });
 
             if (!response.ok) throw new Error(response.error);
 
-            renderResultPanel(toolbar, response.data);
+            renderResultPanel(toolbar, response.data, s);
         } catch (err) {
-            if (err.message.includes('Extension context invalidated')) {
-                button.textContent = 'Recarregue a página';
+            if (err.message && err.message.includes('Extension context invalidated')) {
+                button.textContent = s.buttonReload;
                 return;
             }
-            console.error('[Email Classifier] Erro na análise:', err);
+            console.error('[BriskMail] Erro na análise:', err);
         } finally {
-            setButtonLoading(button, false);
+            setButtonLoading(button, false, s);
         }
     });
 }
 
-function onEmailDetected(container) {
-    injectClassifyButton(container);
-}
-
-function checkForEmails() {
+function checkForEmails(lang) {
     const containers = document.querySelectorAll(`div[data-message-id]:not([${PROCESSED_ATTR}])`);
     containers.forEach(container => {
         container.setAttribute(PROCESSED_ATTR, 'true');
-        onEmailDetected(container);
+        injectClassifyButton(container, lang);
     });
 }
 
-checkForEmails();
+function init() {
+    chrome.storage.sync.get({ briskmail_language: 'pt' }, ({ briskmail_language: lang }) => {
+        checkForEmails(lang);
+        const observer = new MutationObserver(() => checkForEmails(lang));
+        observer.observe(document.body, { childList: true, subtree: true });
+    });
+}
 
-const observer = new MutationObserver(checkForEmails);
-observer.observe(document.body, { childList: true, subtree: true });
+init();
 
-console.log('[Email Classifier] Content script carregado no Gmail.');
+console.log('[BriskMail] Content script carregado no Gmail.');

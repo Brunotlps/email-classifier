@@ -10,37 +10,39 @@
     <img class="header-logo" src="../assets/icon48.png" alt="">
     <div class="header-text">
       <div class="header-title">BriskMail</div>
-      <div class="header-subtitle">Análise inteligente de emails</div>
+      <div class="header-subtitle" id="headerSubtitle"></div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn" id="langPt">PT</button>
+      <button class="lang-btn" id="langEn">EN</button>
     </div>
   </header>
 
   <div class="status-bar">
     <span class="status-dot" id="statusDot"></span>
-    <span class="status-label" id="statusLabel">Verificando...</span>
+    <span class="status-label" id="statusLabel"></span>
   </div>
 
   <section class="section">
-    <div class="section-title">Como usar</div>
+    <div class="section-title" id="howToTitle"></div>
     <ol class="steps">
       <li class="step">
         <span class="step-num">1</span>
-        <span class="step-text">Abra um email no Gmail</span>
+        <span class="step-text" id="step1"></span>
       </li>
       <li class="step">
         <span class="step-num">2</span>
-        <span class="step-text">Clique no botão <strong>Analisar Email</strong></span>
+        <span class="step-text" id="step2"></span>
       </li>
       <li class="step">
         <span class="step-num">3</span>
-        <span class="step-text">Veja o resumo, categoria e sugestões de resposta</span>
+        <span class="step-text" id="step3"></span>
       </li>
     </ol>
   </section>
 
   <footer class="footer">
-    <a class="footer-link" href="https://email-classifier-ruddy.vercel.app" target="_blank">
-      Abrir versão web →
-    </a>
+    <a class="footer-link" href="https://email-classifier-ruddy.vercel.app" target="_blank" id="webLink"></a>
   </footer>
 
   <script src="popup.js"></script>

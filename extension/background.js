@@ -6,7 +6,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     fetch(`${API_BASE}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email_content: message.emailText }),
+        body: JSON.stringify({ email_content: message.emailText, language: message.language || 'pt' }),
     })
         .then(res => {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);

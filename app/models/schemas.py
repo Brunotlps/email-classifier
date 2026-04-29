@@ -67,6 +67,10 @@ class EmailAnalyzeRequest(BaseModel):
         min_length=10,
         description="Conteúdo do email a ser analisado",
     )
+    language: Literal["pt", "en"] = Field(
+        default="pt",
+        description="Idioma da resposta gerada pela IA (pt = português, en = inglês)",
+    )
 
 
 class EmailAnalysisResponse(BaseModel):
