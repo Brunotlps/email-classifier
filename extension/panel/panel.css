@@ -69,6 +69,13 @@
     margin-bottom: 10px !important;
 }
 
+.ec-brand-icon {
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+}
+
 .ec-category-badge {
     display: inline-block !important;
     padding: 3px 10px !important;

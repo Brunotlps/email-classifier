@@ -76,6 +76,7 @@ function renderResultPanel(toolbar, data, s) {
 
     panel.innerHTML = `
         <div class="ec-result-header">
+            <img class="ec-brand-icon" src="${chrome.runtime.getURL('assets/icon48.png')}" alt="BriskMail">
             <span class="ec-category-badge">${categoryLabel}</span>
             <span class="ec-priority ${priorityClass}">${priorityLabel}</span>
             <span class="ec-action-tag ${data.action_required ? 'ec-action-tag--yes' : 'ec-action-tag--no'}">${actionLabel}</span>
@@ -117,12 +118,7 @@ function injectClassifyButton(container, lang) {
     button.className = 'ec-classify-btn';
     button.textContent = s.button;
 
-    const label = document.createElement('span');
-    label.className = 'ec-toolbar-label';
-    label.textContent = s.label;
-
     toolbar.appendChild(button);
-    toolbar.appendChild(label);
 
     const emailBody = container.querySelector('div.a3s');
     if (emailBody) {
