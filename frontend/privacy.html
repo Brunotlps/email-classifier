@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — BriskMail</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Google Sans', Roboto, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #333;
+      background: #f7f8fc;
+    }
+
+    header {
+      background: #211f60;
+      padding: 20px 0;
+    }
+
+    .header-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .header-inner img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+
+    .header-inner h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .header-inner span {
+      font-size: 13px;
+      color: #a8a5d8;
+      margin-left: 4px;
+    }
+
+    .lang-bar {
+      background: #1a1850;
+      padding: 8px 0;
+      text-align: center;
+    }
+
+    .lang-bar a {
+      color: #a8a5d8;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0 12px;
+      padding: 4px 0;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .lang-bar a:hover,
+    .lang-bar a.active {
+      color: #fff;
+      border-bottom-color: #fff;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 40px auto;
+      padding: 0 24px 60px;
+    }
+
+    .doc { display: none; }
+    .doc.visible { display: block; }
+
+    .updated {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 32px;
+    }
+
+    h2 {
+      font-size: 19px;
+      font-weight: 700;
+      color: #211f60;
+      margin: 36px 0 10px;
+    }
+
+    h2:first-of-type { margin-top: 0; }
+
+    p { margin-bottom: 14px; }
+
+    ul {
+      margin: 0 0 14px 20px;
+    }
+
+    ul li { margin-bottom: 6px; }
+
+    .highlight {
+      background: #f0f2f8;
+      border-left: 4px solid #211f60;
+      border-radius: 0 6px 6px 0;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: #444;
+    }
+
+    a { color: #211f60; }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: #aaa;
+      border-top: 1px solid #e8eaf0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>BriskMail <span>Privacy Policy</span></h1>
+  </div>
+</header>
+
+<div class="lang-bar">
+  <a href="#" class="active" onclick="setLang('en', this); return false;">English</a>
+  <a href="#" onclick="setLang('pt', this); return false;">Português</a>
+</div>
+
+<main>
+
+  <!-- ══════════════════════════════════════════════
+       ENGLISH
+  ══════════════════════════════════════════════ -->
+  <div id="doc-en" class="doc visible">
+    <p class="updated">Last updated: April 29, 2025</p>
+
+    <div class="highlight">
+      BriskMail does not collect, store, or sell any personal data. Email content is sent to our analysis API solely to generate a real-time response and is never retained.
+    </div>
+
+    <h2>1. Overview</h2>
+    <p>BriskMail ("the Extension") is a Chrome browser extension that analyzes Gmail emails using artificial intelligence. This Privacy Policy explains what information the Extension accesses, how it is used, and what rights you have.</p>
+
+    <h2>2. Data We Access</h2>
+    <p>The Extension accesses the following information:</p>
+    <ul>
+      <li><strong>Email body text</strong> — read directly from the Gmail page you have open in your browser, only when you click the "Analyze Email" button.</li>
+      <li><strong>Active tab URL</strong> — used only to detect whether the current tab is Gmail, in order to show the correct status in the popup.</li>
+      <li><strong>Language preference</strong> — stored locally via <code>chrome.storage.sync</code> to remember whether you prefer Portuguese or English responses.</li>
+    </ul>
+
+    <h2>3. How We Use Your Data</h2>
+    <ul>
+      <li>Email content is transmitted over HTTPS to our analysis API (<code>email-classifier-api.fly.dev</code>) <strong>only when you explicitly click the button</strong>.</li>
+      <li>The API processes the text with an AI model and returns a summary, category, priority score, and reply suggestions.</li>
+      <li><strong>No email content is stored, logged, or used for training.</strong> The API processes the request in memory and discards it immediately after returning the response.</li>
+      <li>The language preference is stored only on your device and is never sent to any server.</li>
+    </ul>
+
+    <h2>4. Data Sharing</h2>
+    <p>We do not sell, rent, or share your personal data with third parties. The AI inference in production is powered by <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI</a>, which processes the email text as part of the API request. OpenAI's data usage policy applies to that processing. We do not send any identifying information (name, email address, account ID) alongside the email text.</p>
+
+    <h2>5. Data Storage and Retention</h2>
+    <ul>
+      <li>Email content is <strong>never stored</strong> on our servers or any external database.</li>
+      <li>Your language preference is stored locally in Chrome sync storage and can be changed or cleared at any time from the extension popup.</li>
+      <li>We do not use cookies, analytics trackers, or any persistent identifiers.</li>
+    </ul>
+
+    <h2>6. Permissions Justification</h2>
+    <p>The Extension requests the following Chrome permissions:</p>
+    <ul>
+      <li><strong>activeTab</strong> — to read the email text from the Gmail tab you are viewing.</li>
+      <li><strong>tabs</strong> — to detect whether Gmail is open, used only for the status indicator in the popup.</li>
+      <li><strong>storage</strong> — to save your language preference locally.</li>
+      <li><strong>host permission for mail.google.com</strong> — required to inject the "Analyze Email" button into Gmail.</li>
+      <li><strong>host permission for email-classifier-api.fly.dev</strong> — required to send the email text to our analysis API.</li>
+    </ul>
+
+    <h2>7. Children's Privacy</h2>
+    <p>BriskMail is not directed at children under the age of 13 and does not knowingly collect information from children.</p>
+
+    <h2>8. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. Changes will be reflected by the "Last updated" date at the top of this page. Continued use of the Extension after changes constitutes acceptance of the updated policy.</p>
+
+    <h2>9. Contact</h2>
+    <p>If you have questions or concerns about this policy, please contact us at <a href="mailto:brunoteixlps@gmail.com">brunoteixlps@gmail.com</a>.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PORTUGUÊS
+  ══════════════════════════════════════════════ -->
+  <div id="doc-pt" class="doc">
+    <p class="updated">Última atualização: 29 de abril de 2025</p>
+
+    <div class="highlight">
+      O BriskMail não coleta, armazena nem vende nenhum dado pessoal. O conteúdo do email é enviado à nossa API de análise apenas para gerar uma resposta em tempo real e nunca é retido.
+    </div>
+
+    <h2>1. Visão Geral</h2>
+    <p>O BriskMail ("a Extensão") é uma extensão do Chrome que analisa emails do Gmail usando inteligência artificial. Esta Política de Privacidade explica quais informações a Extensão acessa, como elas são usadas e quais são seus direitos.</p>
+
+    <h2>2. Dados que Acessamos</h2>
+    <p>A Extensão acessa as seguintes informações:</p>
+    <ul>
+      <li><strong>Texto do corpo do email</strong> — lido diretamente da página do Gmail aberta no seu navegador, somente quando você clica no botão "Analisar Email".</li>
+      <li><strong>URL da aba ativa</strong> — usada apenas para detectar se a aba atual é o Gmail, a fim de exibir o status correto no popup.</li>
+      <li><strong>Preferência de idioma</strong> — armazenada localmente via <code>chrome.storage.sync</code> para lembrar se você prefere respostas em português ou inglês.</li>
+    </ul>
+
+    <h2>3. Como Usamos seus Dados</h2>
+    <ul>
+      <li>O conteúdo do email é transmitido via HTTPS para nossa API de análise (<code>email-classifier-api.fly.dev</code>) <strong>somente quando você clica explicitamente no botão</strong>.</li>
+      <li>A API processa o texto com um modelo de IA e retorna um resumo, categoria, pontuação de prioridade e sugestões de resposta.</li>
+      <li><strong>Nenhum conteúdo de email é armazenado, registrado ou usado para treinamento.</strong> A API processa a requisição em memória e descarta o texto imediatamente após retornar a resposta.</li>
+      <li>A preferência de idioma é armazenada apenas no seu dispositivo e nunca é enviada a nenhum servidor.</li>
+    </ul>
+
+    <h2>4. Compartilhamento de Dados</h2>
+    <p>Não vendemos, alugamos nem compartilhamos seus dados pessoais com terceiros. A inferência de IA em produção é realizada pela <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI</a>, que processa o texto do email como parte da requisição à API. A política de uso de dados da OpenAI se aplica a esse processamento. Não enviamos nenhuma informação identificável (nome, endereço de email, ID de conta) junto com o texto do email.</p>
+
+    <h2>5. Armazenamento e Retenção de Dados</h2>
+    <ul>
+      <li>O conteúdo do email <strong>nunca é armazenado</strong> em nossos servidores ou em qualquer banco de dados externo.</li>
+      <li>Sua preferência de idioma é armazenada localmente no Chrome sync storage e pode ser alterada ou removida a qualquer momento pelo popup da extensão.</li>
+      <li>Não utilizamos cookies, rastreadores de analytics ou identificadores persistentes.</li>
+    </ul>
+
+    <h2>6. Justificativa de Permissões</h2>
+    <p>A Extensão solicita as seguintes permissões do Chrome:</p>
+    <ul>
+      <li><strong>activeTab</strong> — para ler o texto do email na aba do Gmail que você está visualizando.</li>
+      <li><strong>tabs</strong> — para detectar se o Gmail está aberto, usado apenas para o indicador de status no popup.</li>
+      <li><strong>storage</strong> — para salvar sua preferência de idioma localmente.</li>
+      <li><strong>host permission para mail.google.com</strong> — necessária para injetar o botão "Analisar Email" no Gmail.</li>
+      <li><strong>host permission para email-classifier-api.fly.dev</strong> — necessária para enviar o texto do email à nossa API de análise.</li>
+    </ul>
+
+    <h2>7. Privacidade de Crianças</h2>
+    <p>O BriskMail não é direcionado a crianças menores de 13 anos e não coleta intencionalmente informações de crianças.</p>
+
+    <h2>8. Alterações nesta Política</h2>
+    <p>Podemos atualizar esta Política de Privacidade periodicamente. As alterações serão refletidas pela data de "Última atualização" no topo desta página. O uso continuado da Extensão após alterações constitui aceitação da política atualizada.</p>
+
+    <h2>9. Contato</h2>
+    <p>Se você tiver dúvidas ou preocupações sobre esta política, entre em contato pelo email <a href="mailto:brunoteixlps@gmail.com">brunoteixlps@gmail.com</a>.</p>
+  </div>
+
+</main>
+
+<footer>
+  &copy; 2025 BriskMail. All rights reserved.
+</footer>
+
+<script>
+  function setLang(lang, el) {
+    document.querySelectorAll('.doc').forEach(d => d.classList.remove('visible'));
+    document.getElementById('doc-' + lang).classList.add('visible');
+    document.querySelectorAll('.lang-bar a').forEach(a => a.classList.remove('active'));
+    el.classList.add('active');
+  }
+</script>
+
+</body>
+</html>
