@@ -177,10 +177,10 @@ email-classifier/
 ├── Dockerfile                         # Multi-stage build (builder + runtime, non-root user)
 ├── requirements.txt
 ├── pytest.ini
-├── sprint-fase-1.md                   # Estratégia: bug fixes + deploy Fly.io
-├── sprint-fase-2.md                   # Estratégia: Chrome Extension MVP
 └── .env.example
 ```
+
+`sprint-fase-1.md`/`sprint-fase-2.md` (gitignored, local-only) and the local `test_ai.py` smoke script have moved to `archive/` — see `docs/DECISIONS.md` for the architectural decisions they used to be the only record of.
 
 ---
 
