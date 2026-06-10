@@ -64,6 +64,7 @@ test_ai.py
 # Planning docs (local only)
 sprint-fase-1.md
 sprint-fase-2.md
+docs/harness-audit/
 
 # Jupyter Notebook
 .ipynb_checkpoints
