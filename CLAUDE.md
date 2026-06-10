@@ -349,3 +349,18 @@ Use `.github/ISSUE_TEMPLATE/bug_report.md` as the skeleton: Summary, Steps to re
 - Commit and PR text in English, regardless of the language used elsewhere in the conversation.
 - PR titles follow the same `type(scope): summary` format as commit subjects; PR descriptions briefly state what changed and why, mirroring the body of the lead commit.
 - Agent-authored commits/PRs include `Co-Authored-By: Claude <noreply@anthropic.com>` (or the specific model name in use, e.g. `Claude Sonnet 4.6 <noreply@anthropic.com>`).
+
+---
+
+## Custom Skills & Agents
+
+Project-level Claude Code skills (`.claude/skills/`) and subagents (`.claude/agents/`) for recurring BriskMail workflows:
+
+| Name | Type | Use for |
+|---|---|---|
+| `/new-decision` | skill | Append a new entry to `docs/DECISIONS.md` (append-only ADR-lite log) |
+| `/file-bug` | skill | File a GitHub issue from `.github/ISSUE_TEMPLATE/bug_report.md` |
+| `/pre-pr-check` | skill | Run tests + diff + commit/branch convention checklist before opening a PR |
+| `/sync-docs` | skill | Audit `CLAUDE.md`/`README.md` structure trees against the actual repo |
+| `code-reviewer` | agent | Review a diff against Endpoint Status, Resolved Tech Debt, and Code Style |
+| `release-auditor` | agent | Pre-merge/pre-release check: manifest version, i18n sync, CORS, secrets |
