@@ -362,5 +362,10 @@ Project-level Claude Code skills (`.claude/skills/`) and subagents (`.claude/age
 | `/file-bug` | skill | File a GitHub issue from `.github/ISSUE_TEMPLATE/bug_report.md` |
 | `/pre-pr-check` | skill | Run tests + diff + commit/branch convention checklist before opening a PR |
 | `/sync-docs` | skill | Audit `CLAUDE.md`/`README.md` structure trees against the actual repo |
-| `code-reviewer` | agent | Review a diff against Endpoint Status, Resolved Tech Debt, and Code Style |
+| `/review-layer` | skill | Run `code-reviewer` over one module layer (api, services, utils, extension, frontend, tests) |
+| `/triage-findings` | skill | Turn review findings into a batch of GitHub issue drafts for approval, then create them |
+| `code-reviewer` | agent | Review a diff/layer against Endpoint Status, Resolved Tech Debt, and Code Style |
 | `release-auditor` | agent | Pre-merge/pre-release check: manifest version, i18n sync, CORS, secrets |
+
+### Layered review workflow
+Run `/review-layer <layer>` for one module at a time (read-only, reports findings only) → review the findings yourself → run `/triage-findings` to draft a batch of GitHub issues from the findings you want tracked, approve/edit the batch, then they're created via `gh issue create`. No issue is created without an explicit approval step.
