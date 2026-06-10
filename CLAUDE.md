@@ -4,9 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FastAPI REST API that classifies emails as **productive** or **unproductive** using LLMs (Ollama in dev, OpenAI in prod), with response suggestion generation and file upload support for `.txt`, `.eml`, and `.pdf`.
+**BriskMail** — FastAPI REST API that analyzes emails using LLMs (Ollama in dev, OpenAI in prod), returning summary, category, priority, action_required, and contextual reply suggestions. Supports `.txt`, `.eml`, and `.pdf` uploads. Also ships as a **Chrome Extension** for Gmail (Manifest V3), submitted to Chrome Web Store on 2026-04-29.
 
-**Current roadmap**: See `sprint-fase-1.md` (bug fixes + Fly.io deploy) and `sprint-fase-2.md` (Chrome Extension for Gmail).
+**Current status**: Both Fase 1 (backend + deploy) and Fase 2 (Chrome Extension) are complete. Extension is under Chrome Web Store review.
+
+**Extension ID**: `emobblakgalabkddiekmimoegmnbplij`
+
+**Production URLs**:
+- Backend: `https://email-classifier-api.fly.dev`
+- Frontend: `https://email-classifier-ruddy.vercel.app`
+- Privacy policy: `https://email-classifier-ruddy.vercel.app/privacy.html`
+
+**ALLOWED_ORIGINS** (already set on Fly.io):
+`https://email-classifier-ruddy.vercel.app,chrome-extension://emobblakgalabkddiekmimoegmnbplij`
+
+---
+
+## Release Status
+
+The version/status above reflects the last time this file was updated. The source of truth for the extension's actual version is the `version` field in `extension/manifest.json`. If it disagrees with this file, this file is stale — update "Project Overview" and the "Chrome Extension" section below when next touching `extension/`.
 
 ---
 
@@ -33,10 +49,10 @@ docker-compose up -d --build
 # Verify the container is up and the AI backend is reachable
 curl -s http://localhost:8001/health && curl -s http://localhost:8001/test-ai
 
-# Quick classification sanity check
-curl -s -X POST http://localhost:8001/api/v1/classify \
+# Quick analysis sanity check (main endpoint)
+curl -s -X POST http://localhost:8001/api/v1/analyze \
   -H "Content-Type: application/json" \
-  -d '{"email_content": "Prezado, gostaria de agendar uma reunião para discutir o projeto."}'
+  -d '{"email_content": "Prezado, gostaria de agendar uma reunião para discutir o projeto.", "language": "pt"}'
 ```
 
 ### Running tests
@@ -126,15 +142,17 @@ email-classifier/
 │   ├── api/
 │   │   └── routes.py                  # REST endpoints with per-route rate limiting
 │   ├── models/
-│   │   └── schemas.py                 # Pydantic request/response models
+│   │   └── schemas.py                 # Pydantic request/response models (language field: Literal["pt","en"])
 │   ├── services/
-│   │   ├── classifier.py              # EmailClassifier: cache + retry + prompt engineering
+│   │   ├── analyzer.py                # EmailAnalyzer: main service (summary, category, priority, suggestions)
+│   │   ├── classifier.py              # EmailClassifier: legacy cache + retry + prompt engineering
 │   │   └── response_generator.py      # ResponseGenerator: suggestion generation + tone normalization
 │   └── utils/
 │       ├── ai_client.py               # AIClient ABC + OllamaClient + OpenAIClient + factory
 │       └── file_parser.py             # FileParser: .txt / .eml / .pdf extraction
 ├── tests/
 │   ├── conftest.py                    # Shared fixtures (sample emails, temp files)
+│   ├── test_analyzer.py               # Unit tests for EmailAnalyzer
 │   ├── test_classifier.py             # Unit tests for EmailClassifier
 │   ├── test_response_generator.py     # Unit tests for ResponseGenerator
 │   ├── test_file_parser.py            # Unit tests for FileParser
@@ -142,13 +160,18 @@ email-classifier/
 ├── frontend/
 │   ├── index.html                     # SPA with text input and file upload tabs
 │   ├── js/app.js                      # API calls + localStorage history
-│   └── css/style.css
-├── extension/                         # Chrome Extension (Fase 2 — ver sprint-fase-2.md)
+│   ├── css/style.css
+│   ├── privacy.html                   # Privacy policy (required for Chrome Web Store)
+│   ├── vercel.json                    # Vercel deploy config
+│   └── assets/icon.png                # Favicon / brand icon
+├── extension/                         # Chrome Extension (Fase 2 — ver docs/DECISIONS.md)
 │   ├── manifest.json                  # Manifest V3 config
 │   ├── content_script.js             # Injetado no Gmail, lê email e injeta UI
 │   ├── background.js                 # Service worker — intermedia fetch para a API
 │   ├── popup/                        # UI do popup da extensão
-│   └── panel/                        # Painel injetado dentro do Gmail
+│   ├── panel/                        # Painel injetado dentro do Gmail
+│   ├── assets/                       # Icons 16/48/128px, promo tile
+│   └── _locales/                     # en/, pt_BR/ — Chrome Web Store listing locale metadata
 ├── docker-compose.yml
 ├── fly.toml                           # Configuração de deploy no Fly.io
 ├── Dockerfile                         # Multi-stage build (builder + runtime, non-root user)
@@ -162,6 +185,14 @@ email-classifier/
 ---
 
 ## Architecture
+
+### Endpoint Status
+
+| Endpoint | Service(s) | Status |
+|---|---|---|
+| `POST /api/v1/analyze` | `EmailAnalyzer` | **Primary** — used by both the Chrome extension (`extension/background.js`) and the web frontend (`frontend/js/app.js`) |
+| `POST /api/v1/classify-file` | `FileParser` + `EmailAnalyzer` | **Primary** — used by the web frontend for `.txt`/`.eml`/`.pdf` uploads |
+| `POST /api/v1/classify` | `EmailClassifier` + `ResponseGenerator` | **Unused by clients** — kept only for `tests/test_classifier.py`, `tests/test_response_generator.py`, and `tests/test_api_routes.py::TestClassifyEndpoint`. Do not extend; removal is a deliberate decision (see `docs/DECISIONS.md`), not something to bundle into unrelated changes. |
 
 ### Layer structure and responsibilities
 
@@ -215,12 +246,23 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 
 ---
 
+## Branching
+
+- Feature work happens on a branch (historically `claude-edits`), opened as a PR into `main`, then merged.
+- `main` is the deploy branch — every push to `main` triggers `.github/workflows/fly-deploy.yml` (see CI note under Tests).
+- The branch `copilot-worktree-2026-01-25T20-00-23` is a stale agent worktree artifact, not part of the active workflow — safe to delete after confirming no in-progress work depends on it.
+
+---
+
 ## Tests
 
 ### Strategy
 - **Unit tests** (`test_classifier.py`, `test_response_generator.py`): mock the AI client with `patch.object(instance.ai_client, 'generate', new_callable=AsyncMock)`. Never make real AI calls in unit tests.
 - **Integration tests** (`test_api_routes.py`): use `fastapi.testclient.TestClient` with a real app instance. The `test_classify_with_valid_email` and `test_classify_file_with_txt` tests call the real AI (Ollama must be running) — these need `timeout=30.0`.
 - **File parser tests** (`test_file_parser.py`): fully synchronous, no mocking needed.
+
+### CI
+`.github/workflows/fly-deploy.yml` deploys to Fly.io on every push to `main` but does **not** run the test suite. `pytest` is a manual / PR-review gate — run it locally before merging.
 
 ### Fixtures (conftest.py)
 | Fixture | Description |
@@ -236,11 +278,12 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 | Module | Coverage |
 |---|---|
 | `schemas.py` | 100% |
+| `analyzer.py` | 95% |
 | `classifier.py` | 98% |
 | `response_generator.py` | 98% |
 | `main.py` | 86% |
 | `config.py` | 85% |
-| **Total** | **79%** |
+| **Total** | **84%** |
 
 ### asyncio configuration
 `pytest.ini` sets `asyncio_mode = auto` — all `async def test_*` functions are automatically treated as async tests without needing `@pytest.mark.asyncio` (though the existing tests include it explicitly for clarity).
@@ -249,14 +292,18 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 
 ## Tech Debt
 
-Known issues to fix — do not perpetuate these patterns when writing new code:
+No open tech debt items currently tracked. When new tech debt is identified, add a row below with Location/Issue/What to do instead/Status, and reference it from any PR that touches the affected file.
 
 | Location | Issue | What to do instead | Status |
 |---|---|---|---|
-| `app/api/routes.py` | `print()` calls used for logging | Use `structlog.get_logger()` like services do | Pendente (Fase 1) |
-| `app/utils/ai_client.py` | `OpenAIClient` instancia `OpenAI` síncrono com `await` — TypeError em runtime | Trocar para `AsyncOpenAI` do mesmo pacote | Pendente (Fase 1) |
+| _(none currently)_ | | | |
 
-> When touching any of these files, fix the tech debt in the same PR if the change is small. Otherwise, leave a `# TODO:` comment referencing this section.
+### Resolved (Fase 1)
+
+| Location | Issue | Resolution |
+|---|---|---|
+| `app/utils/ai_client.py` | `OpenAIClient` instantiated sync `OpenAI` with `await` — TypeError at runtime | Replaced with `AsyncOpenAI` |
+| `app/api/routes.py` | `print()` calls used for logging | Replaced with `structlog.get_logger()` |
 
 ---
 
@@ -284,8 +331,21 @@ Copy `.env.example` to `.env`. Key variables:
 - `frontend/js/app.js` has `MAINTENANCE_MODE` flag — set to `false` when backend is live
 
 ### Chrome Extension (Fase 2)
-- Lives in `extension/` directory — see `sprint-fase-2.md` for full strategy
+- Lives in `extension/` directory — see `docs/DECISIONS.md` for architectural rationale (DOM scraping vs. Gmail API, deferred v2 features, Manifest V3 constraints)
 - Uses Manifest V3 with a service worker (`background.js`) that intermediates all API calls
 - Content script (`content_script.js`) reads Gmail email body via DOM and injects the result panel
 - Requires the Chrome extension origin to be in `ALLOWED_ORIGINS` on Fly.io
 - Published to Chrome Web Store (one-time $5 developer fee)
+
+---
+
+## Issue & PR Conventions
+
+### Filing issues
+Use `.github/ISSUE_TEMPLATE/bug_report.md` as the skeleton: Summary, Steps to reproduce, Expected vs. actual behavior, Affected files (`path:line`), Additional context (link to the relevant Endpoint Status / Architecture section above).
+
+### Commits and PRs
+- Conventional Commits with scope: `feat(extension): ...`, `fix(api): ...`, `docs: ...`, `chore(config): ...` — match `git log` for examples of scope naming.
+- Commit and PR text in English, regardless of the language used elsewhere in the conversation.
+- PR titles follow the same `type(scope): summary` format as commit subjects; PR descriptions briefly state what changed and why, mirroring the body of the lead commit.
+- Agent-authored commits/PRs include `Co-Authored-By: Claude <noreply@anthropic.com>` (or the specific model name in use, e.g. `Claude Sonnet 4.6 <noreply@anthropic.com>`).

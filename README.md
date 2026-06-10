@@ -55,7 +55,8 @@ email-classifier/
 │   ├── api/routes.py              # REST endpoints, rate limiting, HTTP error mapping
 │   ├── models/schemas.py          # Pydantic request/response models
 │   ├── services/
-│   │   ├── analyzer.py            # EmailAnalyzer: summary, category, priority, suggestions
+│   │   ├── analyzer.py            # EmailAnalyzer: summary, category, priority, suggestions (primary)
+│   │   ├── classifier.py          # EmailClassifier: legacy, powers /classify (unused by clients — see docs/DECISIONS.md)
 │   │   └── response_generator.py  # Reply suggestion generator
 │   ├── utils/
 │   │   ├── ai_client.py           # AIClient ABC + OllamaClient + OpenAIClient + factory
@@ -68,12 +69,15 @@ email-classifier/
 │   ├── background.js              # Service worker — intermediates API calls
 │   ├── popup/                     # Extension popup (status, PT/EN toggle, how-to)
 │   ├── panel/                     # Result panel injected inside Gmail
-│   └── assets/                    # Icons 16/48/128px, promo tile
+│   ├── assets/                    # Icons 16/48/128px, promo tile
+│   └── _locales/                  # en/pt_BR Chrome Web Store listing strings
 ├── frontend/                      # Web SPA (Vercel)
 │   ├── index.html
 │   ├── js/app.js
 │   ├── css/style.css
-│   └── privacy.html               # Privacy policy (required for Chrome Web Store)
+│   ├── privacy.html               # Privacy policy (required for Chrome Web Store)
+│   ├── vercel.json                # Vercel deploy config
+│   └── assets/icon.png            # Brand icon
 ├── tests/
 │   ├── conftest.py
 │   ├── test_api_routes.py
@@ -99,6 +103,8 @@ email-classifier/
 **Prompt engineering pattern** — both `EmailAnalyzer` and `ResponseGenerator` follow: `_build_system_prompt` → `_build_user_prompt` → AI call → `_extract_json` (regex, tolerates model commentary) → `_parse_response` (validates fields).
 
 **DOM-based Gmail integration** — the extension reads email content via `div.a3s.innerText` and uses `MutationObserver` to detect newly opened emails. No OAuth required for the MVP.
+
+**Legacy `/classify` endpoint** — `app/services/classifier.py` and `response_generator.py` power `POST /api/v1/classify`, a binary produtivo/improdutivo classifier. Neither the Chrome extension nor the web frontend call it; it's kept for its existing test coverage. See `docs/DECISIONS.md` for details.
 
 ---
 
