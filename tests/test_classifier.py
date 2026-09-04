@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch
+from app.exceptions import InvalidAIResponseError
 from app.services.classifier import EmailClassifier
 
 
@@ -57,8 +58,10 @@ class TestEmailClassifier:
     with patch.object(classifier.ai_client, 'generate', new_callable=AsyncMock) as mock_generate:
       mock_generate.return_value = mock_response
       
-      with pytest.raises(ValueError, match="JSON válido"):
+      with pytest.raises(InvalidAIResponseError, match="resposta inválida") as exc_info:
         await classifier.classify(sample_produtivo_email)
+
+      assert mock_response not in str(exc_info.value)
   
   @pytest.mark.asyncio
   async def test_classify_missing_fields_raises_error(self, classifier, sample_produtivo_email):
@@ -69,7 +72,7 @@ class TestEmailClassifier:
     with patch.object(classifier.ai_client, 'generate', new_callable=AsyncMock) as mock_generate:
       mock_generate.return_value = mock_response
         
-      with pytest.raises(ValueError, match="ausente"):
+      with pytest.raises(InvalidAIResponseError, match="resposta inválida"):
         await classifier.classify(sample_produtivo_email)
   
   @pytest.mark.asyncio
@@ -85,7 +88,7 @@ class TestEmailClassifier:
     with patch.object(classifier.ai_client, 'generate', new_callable=AsyncMock) as mock_generate:
       mock_generate.return_value = mock_response
       
-      with pytest.raises(ValueError, match="Classificação inválida"):
+      with pytest.raises(InvalidAIResponseError, match="resposta inválida"):
         await classifier.classify(sample_produtivo_email)
   
   @pytest.mark.asyncio
@@ -101,7 +104,7 @@ class TestEmailClassifier:
     with patch.object(classifier.ai_client, 'generate', new_callable=AsyncMock) as mock_generate:
       mock_generate.return_value = mock_response
       
-      with pytest.raises(ValueError, match="entre 0 e 1"):
+      with pytest.raises(InvalidAIResponseError, match="resposta inválida"):
         await classifier.classify(sample_produtivo_email)
   
   def test_extract_json_from_text(self, classifier):

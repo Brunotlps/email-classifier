@@ -1,6 +1,7 @@
 import pytest
 import json
 from unittest.mock import AsyncMock, patch
+from app.exceptions import InvalidAIResponseError
 from app.services.analyzer import EmailAnalyzer
 
 
@@ -36,11 +37,14 @@ class TestEmailAnalyzer:
         assert len(result["suggestions"]) == 2
 
     @pytest.mark.asyncio
-    async def test_analyze_invalid_json_raises_value_error(self, analyzer, sample_produtivo_email):
+    async def test_analyze_invalid_json_raises_sanitized_upstream_error(self, analyzer, sample_produtivo_email):
+        raw_response = "This is not JSON at all"
         with patch.object(analyzer.ai_client, 'generate', new_callable=AsyncMock) as mock:
-            mock.return_value = "This is not JSON at all"
-            with pytest.raises(ValueError, match="not valid JSON"):
+            mock.return_value = raw_response
+            with pytest.raises(InvalidAIResponseError, match="resposta inválida") as exc_info:
                 await analyzer.analyze(sample_produtivo_email)
+
+        assert raw_response not in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_analyze_missing_summary_raises_error(self, analyzer, sample_produtivo_email):
@@ -52,7 +56,7 @@ class TestEmailAnalyzer:
         })
         with patch.object(analyzer.ai_client, 'generate', new_callable=AsyncMock) as mock:
             mock.return_value = incomplete
-            with pytest.raises(ValueError, match="Missing required field"):
+            with pytest.raises(InvalidAIResponseError, match="resposta inválida"):
                 await analyzer.analyze(sample_produtivo_email)
 
     @pytest.mark.asyncio
@@ -65,7 +69,7 @@ class TestEmailAnalyzer:
         })
         with patch.object(analyzer.ai_client, 'generate', new_callable=AsyncMock) as mock:
             mock.return_value = incomplete
-            with pytest.raises(ValueError, match="Missing required field"):
+            with pytest.raises(InvalidAIResponseError, match="resposta inválida"):
                 await analyzer.analyze(sample_produtivo_email)
 
     @pytest.mark.asyncio
