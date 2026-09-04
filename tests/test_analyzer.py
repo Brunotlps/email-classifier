@@ -203,3 +203,39 @@ class TestEmailAnalyzer:
         assert result["category"] == "Newsletter / Marketing"
         assert result["action_required"] is False
         assert result["suggestions"] == []
+
+    @pytest.mark.parametrize(
+        ("field", "invalid_value", "logged_value"),
+        [
+            ("category", "InvalidCategory", "InvalidCategory"),
+            ("priority", "urgent", "urgent"),
+            ("action_required", "false", "false"),
+            ("suggestions", {"content": "invalid"}, "dict"),
+        ],
+    )
+    def test_validate_logs_field_coercions(
+        self,
+        analyzer,
+        field,
+        invalid_value,
+        logged_value,
+    ):
+        data = {
+            "summary": "Test",
+            "category": "Outro",
+            "priority": "normal",
+            "action_required": False,
+            "suggestions": [],
+        }
+        data[field] = invalid_value
+
+        with patch("app.services.analyzer.logger.warning") as warning:
+            analyzer._validate(data)
+
+        warning.assert_called_once_with(
+            "field_coerced",
+            field=field,
+            original_value=logged_value,
+            ai_provider=analyzer.ai_provider,
+            ai_model=analyzer.ai_model,
+        )

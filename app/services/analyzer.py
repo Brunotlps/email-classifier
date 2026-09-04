@@ -9,6 +9,7 @@ from typing import Dict, Any
 
 from app.utils.ai_client import get_ai_client
 from app.models.schemas import CATEGORIES_LIST
+from app.config import settings
 
 
 logger = structlog.get_logger()
@@ -120,6 +121,12 @@ class EmailAnalyzer:
     def __init__(self):
         self.ai_client = get_ai_client()
         self.cache = TTLCache(maxsize=100, ttl=3600)
+        self.ai_provider = settings.ai_provider
+        self.ai_model = (
+            settings.ollama_model
+            if settings.ai_provider == "ollama"
+            else settings.openai_model
+        )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10), reraise=True)
     async def _call_ai(self, user_prompt: str) -> str:
@@ -159,13 +166,31 @@ class EmailAnalyzer:
                 raise ValueError(f"Missing required field: '{field}'")
 
         if data["category"] not in CATEGORIES_LIST:
+            self._log_field_coercion("category", data["category"])
             data["category"] = "Outro"
 
         if data["priority"] not in ("alta", "normal", "baixa"):
+            self._log_field_coercion("priority", data["priority"])
             data["priority"] = "normal"
 
         if not isinstance(data["action_required"], bool):
+            self._log_field_coercion("action_required", data["action_required"])
             data["action_required"] = bool(data["action_required"])
 
         if "suggestions" not in data or not isinstance(data["suggestions"], list):
+            self._log_field_coercion("suggestions", data.get("suggestions"))
             data["suggestions"] = []
+
+    def _log_field_coercion(self, field: str, original_value: Any) -> None:
+        logged_value = (
+            type(original_value).__name__
+            if field == "suggestions"
+            else str(original_value)[:50]
+        )
+        logger.warning(
+            "field_coerced",
+            field=field,
+            original_value=logged_value,
+            ai_provider=self.ai_provider,
+            ai_model=self.ai_model,
+        )
