@@ -60,8 +60,10 @@ email-classifier/
 │   │   └── response_generator.py  # Reply suggestion generator
 │   ├── utils/
 │   │   ├── ai_client.py           # AIClient ABC + OllamaClient + OpenAIClient + factory
+│   │   ├── ai_response.py         # Safe diagnostics for invalid AI responses
 │   │   └── file_parser.py         # .txt / .eml / .pdf extraction
 │   ├── config.py                  # Pydantic Settings (env-based, Docker-aware)
+│   ├── exceptions.py              # Domain exceptions for upstream AI failures
 │   └── main.py                    # FastAPI app, CORS, middleware
 ├── extension/                     # Chrome Extension (Manifest V3)
 │   ├── manifest.json              # Permissions, host_permissions, web_accessible_resources

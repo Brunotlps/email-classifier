@@ -8,6 +8,7 @@ from cachetools import TTLCache
 from typing import Dict, Any
 
 from app.utils.ai_client import get_ai_client
+from app.utils.ai_response import raise_invalid_ai_response
 from app.models.schemas import CATEGORIES_LIST
 from app.config import settings
 
@@ -149,15 +150,37 @@ class EmailAnalyzer:
         return result
 
     def _parse(self, response: str) -> Dict[str, Any]:
+        if not isinstance(response, str):
+            raise_invalid_ai_response(
+                service="analyzer",
+                response=response,
+                reason="invalid_type",
+                cause=TypeError("AI response must be a string"),
+            )
+
         match = re.search(r'\{.*\}', response, re.DOTALL)
         text = match.group(0) if match else response.strip()
 
         try:
             data = json.loads(text)
         except json.JSONDecodeError as e:
-            raise ValueError(f"AI response is not valid JSON: {response}") from e
+            raise_invalid_ai_response(
+                service="analyzer",
+                response=response,
+                reason="invalid_json",
+                cause=e,
+            )
 
-        self._validate(data)
+        try:
+            self._validate(data)
+        except (TypeError, ValueError) as e:
+            raise_invalid_ai_response(
+                service="analyzer",
+                response=response,
+                reason="invalid_schema",
+                cause=e,
+            )
+
         return data
 
     def _validate(self, data: Dict[str, Any]) -> None:

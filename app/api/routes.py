@@ -10,11 +10,19 @@ from app.services.classifier import EmailClassifier
 from app.services.response_generator import ResponseGenerator
 from app.services.analyzer import EmailAnalyzer
 from app.utils.file_parser import FileParser
+from app.exceptions import InvalidAIResponseError
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 logger = structlog.get_logger()
+
+INVALID_AI_RESPONSE_DETAIL = "O serviço de IA retornou uma resposta inválida. Tente novamente."
+INVALID_AI_RESPONSE_RESPONSES = {
+    status.HTTP_502_BAD_GATEWAY: {
+        "description": "O provedor de IA retornou uma resposta que não pôde ser validada."
+    }
+}
 
 router = APIRouter(prefix="/api/v1", tags=["Classification"])
 
@@ -33,6 +41,7 @@ analyzer = EmailAnalyzer()
     "/classify",
     response_model=EmailClassifyResponse,
     status_code=status.HTTP_200_OK,
+    responses=INVALID_AI_RESPONSE_RESPONSES,
     summary="Classifica um email",
     description="""
         Classifica um email como produtivo ou improdutivo usando IA.
@@ -55,7 +64,8 @@ async def classify_email(request: Request, email_request: EmailClassifyRequest):
             
     Raises:
             HTTPException 400: Se email inválido
-            HTTPException 500: Se erro na IA
+            HTTPException 502: Se a IA retornar uma resposta inválida
+            HTTPException 500: Se ocorrer um erro interno inesperado
     """
 
     try:
@@ -80,6 +90,11 @@ async def classify_email(request: Request, email_request: EmailClassifyRequest):
 
         return response
     
+    except InvalidAIResponseError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=INVALID_AI_RESPONSE_DETAIL,
+        ) from e
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -97,6 +112,7 @@ async def classify_email(request: Request, email_request: EmailClassifyRequest):
     "/analyze",
     response_model=EmailAnalysisResponse,
     status_code=status.HTTP_200_OK,
+    responses=INVALID_AI_RESPONSE_RESPONSES,
     summary="Analisa um email",
     description="""
         Analisa um email e retorna um resumo, categoria, prioridade e sugestões de resposta contextuais.
@@ -128,6 +144,11 @@ async def analyze_email(request: Request, email_request: EmailAnalyzeRequest):
             suggestions=suggestions,
         )
 
+    except InvalidAIResponseError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=INVALID_AI_RESPONSE_DETAIL,
+        ) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -154,6 +175,7 @@ async def classification_health():
     "/classify-file",
     response_model=EmailAnalysisResponse,
     status_code=status.HTTP_200_OK,
+    responses=INVALID_AI_RESPONSE_RESPONSES,
     summary="Analisa email a partir de arquivo",
     description="""
         Analisa um email enviado como arquivo (.txt, .eml ou .pdf).
@@ -193,6 +215,11 @@ async def classify_email_from_file(file: UploadFile = File(..., description="Arq
 
     except HTTPException:
         raise
+    except InvalidAIResponseError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=INVALID_AI_RESPONSE_DETAIL,
+        ) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:

@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from unittest.mock import AsyncMock, patch
+from app.api import routes
 from app.main import app
 
 
@@ -46,6 +47,24 @@ class TestClassifyEndpoint:
     def test_classify_without_email_content_fails(self):
         response = client.post("/api/v1/classify", json={})
         assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_classify_invalid_ai_response_returns_sanitized_502(self):
+        raw_response = "malformed model output with private content"
+        with patch.object(routes.classifier.ai_client, "generate", new_callable=AsyncMock) as mock:
+            mock.return_value = raw_response
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://testserver") as async_client:
+                response = await async_client.post(
+                    "/api/v1/classify",
+                    json={"email_content": "Valid email content for the classifier."},
+                )
+
+        assert response.status_code == 502
+        assert response.json() == {
+            "detail": "O serviço de IA retornou uma resposta inválida. Tente novamente."
+        }
+        assert raw_response not in response.text
 
 
 class TestAnalyzeEndpoint:
@@ -94,9 +113,9 @@ class TestAnalyzeEndpoint:
         assert response.status_code == 200
         mock.assert_awaited_once_with(email_content, "en")
 
-    def test_analyze_invalid_email_returns_400(self):
+    def test_analyze_service_validation_error_returns_400(self):
         with patch("app.api.routes.analyzer.analyze", new_callable=AsyncMock) as mock:
-            mock.side_effect = ValueError("not valid JSON")
+            mock.side_effect = ValueError("invalid email content")
             response = client.post(
                 "/api/v1/analyze",
                 json={"email_content": "Olá, podemos marcar uma reunião para discutir o contrato?"},
@@ -113,6 +132,24 @@ class TestAnalyzeEndpoint:
             )
 
         assert response.status_code == 500
+
+    @pytest.mark.asyncio
+    async def test_analyze_invalid_ai_response_returns_sanitized_502(self):
+        raw_response = "malformed model output with private content"
+        with patch.object(routes.analyzer.ai_client, "generate", new_callable=AsyncMock) as mock:
+            mock.return_value = raw_response
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://testserver") as async_client:
+                response = await async_client.post(
+                    "/api/v1/analyze",
+                    json={"email_content": "Valid unique email content for invalid AI output."},
+                )
+
+        assert response.status_code == 502
+        assert response.json() == {
+            "detail": "O serviço de IA retornou uma resposta inválida. Tente novamente."
+        }
+        assert raw_response not in response.text
 
     def test_analyze_no_suggestions_when_not_action_required(self):
         result_no_action = {**_VALID_ANALYSIS, "action_required": False, "suggestions": []}
@@ -178,6 +215,30 @@ class TestClassifyFileEndpoint:
         assert response.status_code == 400
         assert "suportado" in response.json()["detail"].lower()
 
+    @pytest.mark.asyncio
+    async def test_classify_file_invalid_ai_response_returns_502(self):
+        raw_response = "malformed file-analysis output with private content"
+        with patch.object(routes.analyzer.ai_client, "generate", new_callable=AsyncMock) as mock:
+            mock.return_value = raw_response
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://testserver") as async_client:
+                response = await async_client.post(
+                    "/api/v1/classify-file",
+                    files={
+                        "file": (
+                            "email.txt",
+                            b"Valid unique file content for invalid AI output.",
+                            "text/plain",
+                        )
+                    },
+                )
+
+        assert response.status_code == 502
+        assert response.json() == {
+            "detail": "O serviço de IA retornou uma resposta inválida. Tente novamente."
+        }
+        assert raw_response not in response.text
+
 
 class TestHealthEndpoints:
     """Testes dos endpoints de health check"""
@@ -215,3 +276,15 @@ class TestSwaggerDocs:
         data = response.json()
         assert "info" in data
         assert data["info"]["title"] == "Email Classifier API"
+
+    @pytest.mark.asyncio
+    async def test_ai_endpoints_document_invalid_response_as_502(self):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as async_client:
+            response = await async_client.get("/openapi.json")
+
+        assert response.status_code == 200
+        paths = response.json()["paths"]
+        assert "502" in paths["/api/v1/analyze"]["post"]["responses"]
+        assert "502" in paths["/api/v1/classify"]["post"]["responses"]
+        assert "502" in paths["/api/v1/classify-file"]["post"]["responses"]

@@ -4,6 +4,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from cachetools import TTLCache
 from typing import Dict, Any
 from app.utils.ai_client import get_ai_client
+from app.utils.ai_response import raise_invalid_ai_response
 
 
 logger = structlog.get_logger()
@@ -175,8 +176,16 @@ class EmailClassifier:
                 Dicionário com classificação parseada
                 
         Raises:
-                ValueError: Se resposta não for JSON válido
+                InvalidAIResponseError: Se a resposta da IA não puder ser validada
         """
+
+        if not isinstance(response, str):
+            raise_invalid_ai_response(
+                service="classifier",
+                response=response,
+                reason="invalid_type",
+                cause=TypeError("AI response must be a string"),
+            )
 
         try:
             response_clean = self._extract_json(response)
@@ -188,7 +197,19 @@ class EmailClassifier:
             return result
         
         except json.JSONDecodeError as e:
-            raise ValueError(f"Resposta da IA não é um JSON válido: {response}") from e
+            raise_invalid_ai_response(
+                service="classifier",
+                response=response,
+                reason="invalid_json",
+                cause=e,
+            )
+        except (TypeError, ValueError) as e:
+            raise_invalid_ai_response(
+                service="classifier",
+                response=response,
+                reason="invalid_schema",
+                cause=e,
+            )
         
     def _extract_json(self, text: str) -> str:
         """
@@ -239,6 +260,3 @@ class EmailClassifier:
                 raise ValueError("Reasoning deve ser uma string não vazia")
         
     
-
-
-

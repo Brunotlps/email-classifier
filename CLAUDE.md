@@ -139,6 +139,7 @@ email-classifier/
 ├── app/
 │   ├── main.py                        # FastAPI app, CORS, rate limiter, request logging middleware
 │   ├── config.py                      # Pydantic Settings (reads .env, auto-detects Docker)
+│   ├── exceptions.py                  # Domain exceptions for upstream AI failures
 │   ├── api/
 │   │   └── routes.py                  # REST endpoints with per-route rate limiting
 │   ├── models/
@@ -149,6 +150,7 @@ email-classifier/
 │   │   └── response_generator.py      # ResponseGenerator: suggestion generation + tone normalization
 │   └── utils/
 │       ├── ai_client.py               # AIClient ABC + OllamaClient + OpenAIClient + factory
+│       ├── ai_response.py             # Safe diagnostics for invalid AI responses
 │       └── file_parser.py             # FileParser: .txt / .eml / .pdf extraction
 ├── tests/
 │   ├── conftest.py                    # Shared fixtures (sample emails, temp files)
@@ -241,7 +243,7 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 - **Class methods**: use `self` for instance methods; `FileParser` uses `@staticmethod` for all methods (no instance state)
 - **Async**: all AI calls and HTTP endpoint handlers are `async def`; helper/parsing methods are sync
 - **Logging**: use `structlog.get_logger()` — never `print()` in service/util code (some `print()` calls exist in routes as tech debt)
-- **Error handling**: services raise `ValueError` for invalid input/response; routes catch `ValueError` → HTTP 400, `Exception` → HTTP 500
+- **Error handling**: invalid client input uses `ValueError` → HTTP 400; malformed or invalid model output uses `InvalidAIResponseError` → HTTP 502 with a sanitized detail; unexpected failures → HTTP 500
 - **Comments in Portuguese**: docstrings and inline comments are in Portuguese throughout the codebase
 
 ---
