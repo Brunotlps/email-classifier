@@ -156,6 +156,21 @@ class TestEmailAnalyzer:
         assert mock.call_count == 2
 
     @pytest.mark.asyncio
+    async def test_analyze_same_email_in_different_languages_uses_separate_cache_entries(
+        self,
+        analyzer,
+        sample_produtivo_email,
+    ):
+        with patch.object(analyzer.ai_client, 'generate', new_callable=AsyncMock) as mock:
+            mock.return_value = _VALID_RESPONSE
+            await analyzer.analyze(sample_produtivo_email, language="pt")
+            await analyzer.analyze(sample_produtivo_email, language="en")
+
+        assert mock.await_count == 2
+        english_prompt = mock.await_args_list[1].args[0]
+        assert english_prompt.startswith("Respond in English.")
+
+    @pytest.mark.asyncio
     async def test_analyze_all_valid_priorities(self, analyzer, sample_produtivo_email):
         for priority in ("alta", "normal", "baixa"):
             new_analyzer = EmailAnalyzer()
@@ -188,3 +203,39 @@ class TestEmailAnalyzer:
         assert result["category"] == "Newsletter / Marketing"
         assert result["action_required"] is False
         assert result["suggestions"] == []
+
+    @pytest.mark.parametrize(
+        ("field", "invalid_value", "logged_value"),
+        [
+            ("category", "InvalidCategory", "InvalidCategory"),
+            ("priority", "urgent", "urgent"),
+            ("action_required", "false", "false"),
+            ("suggestions", {"content": "invalid"}, "dict"),
+        ],
+    )
+    def test_validate_logs_field_coercions(
+        self,
+        analyzer,
+        field,
+        invalid_value,
+        logged_value,
+    ):
+        data = {
+            "summary": "Test",
+            "category": "Outro",
+            "priority": "normal",
+            "action_required": False,
+            "suggestions": [],
+        }
+        data[field] = invalid_value
+
+        with patch("app.services.analyzer.logger.warning") as warning:
+            analyzer._validate(data)
+
+        warning.assert_called_once_with(
+            "field_coerced",
+            field=field,
+            original_value=logged_value,
+            ai_provider=analyzer.ai_provider,
+            ai_model=analyzer.ai_model,
+        )
