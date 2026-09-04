@@ -1,6 +1,4 @@
 import pytest
-import os
-from pathlib import Path
 
 
 @pytest.fixture
@@ -63,10 +61,3 @@ def sample_large_file(tmp_path):
   large_content = "A" * (6 * 1024 * 1024)
   file_path.write_text(large_content)
   return file_path
-
-
-@pytest.fixture
-def fixtures_dir():
-  """Retorna o diretório de fixtures de teste."""
-  
-  return Path(__file__).parent / "fixtures"
