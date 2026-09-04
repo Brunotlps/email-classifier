@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 from unittest.mock import AsyncMock, patch
 from app.main import app
 
@@ -77,6 +78,21 @@ class TestAnalyzeEndpoint:
         assert data["priority"] == "normal"
         assert data["action_required"] is True
         assert len(data["suggestions"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_analyze_forwards_english_language(self):
+        email_content = "Hello, can we schedule a meeting to discuss the contract?"
+        with patch("app.api.routes.analyzer.analyze", new_callable=AsyncMock) as mock:
+            mock.return_value = _VALID_ANALYSIS
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://testserver") as async_client:
+                response = await async_client.post(
+                    "/api/v1/analyze",
+                    json={"email_content": email_content, "language": "en"},
+                )
+
+        assert response.status_code == 200
+        mock.assert_awaited_once_with(email_content, "en")
 
     def test_analyze_invalid_email_returns_400(self):
         with patch("app.api.routes.analyzer.analyze", new_callable=AsyncMock) as mock:

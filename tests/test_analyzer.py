@@ -156,6 +156,21 @@ class TestEmailAnalyzer:
         assert mock.call_count == 2
 
     @pytest.mark.asyncio
+    async def test_analyze_same_email_in_different_languages_uses_separate_cache_entries(
+        self,
+        analyzer,
+        sample_produtivo_email,
+    ):
+        with patch.object(analyzer.ai_client, 'generate', new_callable=AsyncMock) as mock:
+            mock.return_value = _VALID_RESPONSE
+            await analyzer.analyze(sample_produtivo_email, language="pt")
+            await analyzer.analyze(sample_produtivo_email, language="en")
+
+        assert mock.await_count == 2
+        english_prompt = mock.await_args_list[1].args[0]
+        assert english_prompt.startswith("Respond in English.")
+
+    @pytest.mark.asyncio
     async def test_analyze_all_valid_priorities(self, analyzer, sample_produtivo_email):
         for priority in ("alta", "normal", "baixa"):
             new_analyzer = EmailAnalyzer()
