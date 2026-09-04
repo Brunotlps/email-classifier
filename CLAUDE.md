@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**BriskMail** — FastAPI REST API that analyzes emails using LLMs (Ollama in dev, OpenAI in prod), returning summary, category, priority, action_required, and contextual reply suggestions. Supports `.txt`, `.eml`, and `.pdf` uploads. Also ships as a **Chrome Extension** for Gmail (Manifest V3), submitted to Chrome Web Store on 2026-04-29.
+**BriskMail** — FastAPI REST API that analyzes emails using LLMs (Ollama in dev, OpenAI in prod), returning summary, category, priority, action_required, and contextual reply suggestions. Supports `.txt`, `.eml`, and `.pdf` uploads. Also ships as a **Chrome Extension** for Gmail (Manifest V3), published in the Chrome Web Store.
 
-**Current status**: Both Fase 1 (backend + deploy) and Fase 2 (Chrome Extension) are complete. Extension is under Chrome Web Store review.
+**Current status**: Both Fase 1 (backend + deploy) and Fase 2 (Chrome Extension) are complete. Extension source is at version 1.1.1, pending Chrome Web Store publication.
 
 **Extension ID**: `emobblakgalabkddiekmimoegmnbplij`
 

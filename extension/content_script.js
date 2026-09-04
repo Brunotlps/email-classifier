@@ -11,6 +11,9 @@ const STRINGS = {
         actionNotRequired: 'Sem ação necessária',
         suggestionsTitle: 'Sugestões de resposta',
         copied: 'Copiado para a área de transferência!',
+        errorTitle: 'Não foi possível analisar este email',
+        analysisError: 'Tente novamente. Se o erro continuar, verifique se a extensão está ativa.',
+        connectionError: 'Recarregue esta página do Gmail para reconectar a extensão.',
         categoryMap: {
             'Proposta Comercial': 'Proposta Comercial',
             'Reunião / Agenda': 'Reunião / Agenda',
@@ -34,6 +37,9 @@ const STRINGS = {
         actionNotRequired: 'No action needed',
         suggestionsTitle: 'Reply suggestions',
         copied: 'Copied to clipboard!',
+        errorTitle: 'This email could not be analyzed',
+        analysisError: 'Try again. If the error persists, check that the extension is active.',
+        connectionError: 'Reload this Gmail page to reconnect the extension.',
         categoryMap: {
             'Proposta Comercial': 'Business Proposal',
             'Reunião / Agenda': 'Meeting / Schedule',
@@ -61,9 +67,30 @@ function setButtonLoading(button, loading, s) {
     button.textContent = loading ? s.buttonLoading : s.button;
 }
 
-function renderResultPanel(toolbar, data, s) {
-    const existing = toolbar.parentElement.querySelector('.ec-result-panel');
+function removeExistingPanel(toolbar) {
+    const existing = toolbar.parentElement.querySelector('.ec-result-panel, .ec-error-panel');
     if (existing) existing.remove();
+}
+
+function renderErrorPanel(toolbar, message, s) {
+    removeExistingPanel(toolbar);
+
+    const panel = document.createElement('div');
+    panel.className = 'ec-error-panel';
+    panel.setAttribute('role', 'alert');
+
+    const title = document.createElement('strong');
+    title.textContent = s.errorTitle;
+
+    const details = document.createElement('span');
+    details.textContent = message;
+
+    panel.append(title, details);
+    toolbar.insertAdjacentElement('afterend', panel);
+}
+
+function renderResultPanel(toolbar, data, s) {
+    removeExistingPanel(toolbar);
 
     const panel = document.createElement('div');
     panel.className = 'ec-result-panel';
@@ -135,6 +162,8 @@ function injectClassifyButton(container, lang) {
         }
 
         setButtonLoading(button, true, s);
+        removeExistingPanel(toolbar);
+        let shouldResetButton = true;
 
         try {
             const response = await chrome.runtime.sendMessage({
@@ -143,17 +172,26 @@ function injectClassifyButton(container, lang) {
                 language: lang,
             });
 
-            if (!response.ok) throw new Error(response.error);
+            if (!response || !response.ok) {
+                throw new Error(response?.error || 'Invalid response from background service worker');
+            }
 
             renderResultPanel(toolbar, response.data, s);
         } catch (err) {
-            if (err.message && err.message.includes('Extension context invalidated')) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            const isConnectionError = errorMessage.includes('Extension context invalidated')
+                || errorMessage.includes('Receiving end does not exist');
+
+            if (isConnectionError) {
+                shouldResetButton = false;
+                button.disabled = true;
                 button.textContent = s.buttonReload;
-                return;
             }
-            console.error('[BriskMail] Erro na análise:', err);
+
+            renderErrorPanel(toolbar, isConnectionError ? s.connectionError : s.analysisError, s);
+            console.error('[BriskMail] Erro na análise:', errorMessage);
         } finally {
-            setButtonLoading(button, false, s);
+            if (shouldResetButton) setButtonLoading(button, false, s);
         }
     });
 }
