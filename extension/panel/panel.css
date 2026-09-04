@@ -59,6 +59,21 @@
     color: #333 !important;
 }
 
+.ec-error-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    margin-bottom: 8px !important;
+    padding: 10px 12px !important;
+    background-color: #fce8e6 !important;
+    border: 1px solid #d93025 !important;
+    border-radius: 8px !important;
+    color: #8c1d18 !important;
+    font-family: 'Google Sans', Roboto, Arial, sans-serif !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+}
+
 /* Header: categoria + prioridade + ação */
 
 .ec-result-header {

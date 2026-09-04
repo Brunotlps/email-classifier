@@ -12,12 +12,6 @@ from openai import AsyncOpenAI, RateLimitError, AuthenticationError, APIError
 
 logger = structlog.getLogger()
 
-def _mask_api_key(key: str) -> str:
-
-    if not key or len(key) < 10:
-        return "***INVALID***"
-    return f"{key[:7]}...{key[-4:]}"
-
 
 class AIClient(ABC):
     """Classe abstrata para clientes de IA"""
@@ -90,7 +84,7 @@ class OpenAIClient(AIClient):
         
         self._validate_api_key()
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        logger.info("openai_client_initialized", model=settings.openai_model, key=_mask_api_key(settings.openai_api_key))  
+        logger.info("openai_client_initialized", model=settings.openai_model)
     
         # self.api_key = settings.openai_api_key
         # self.model = settings.openai_model
@@ -114,9 +108,7 @@ class OpenAIClient(AIClient):
         if not settings.openai_api_key.startswith("sk-"):
             raise ValueError("OpenAI API key inválida (deve começar com 'sk-')") 
 
-        logger.info("openai_api_key_validated", 
-            key_prefix=settings.openai_api_key[:7],  # Mostra só "sk-proj"
-            key_length=len(settings.openai_api_key))
+        logger.info("openai_api_key_validated")
 
 
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
@@ -150,8 +142,7 @@ class OpenAIClient(AIClient):
             )
         
         except AuthenticationError as e:
-            logger.error("openai_authentication_failed", 
-                         key=_mask_api_key(settings.openai_api_key))
+            logger.error("openai_authentication_failed")
             raise ValueError(
                 "Autenticação OpenAI falhou. "
                 "Verifique se sua API key está correta e ativa."
