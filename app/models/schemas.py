@@ -11,27 +11,7 @@ class ResponseSuggestion(BaseModel):
     tone: Literal["formal", "cordial", "casual", "técnico"] = Field(..., description="Tom da resposta")
 
 
-# --- /classify (mantido para compatibilidade) ---
-
-class EmailClassifyRequest(BaseModel):
-    """Request para classificar email"""
-    email_content: str = Field(
-        ...,
-        min_length=10,
-        description="Conteúdo do email a ser classificado",
-        examples=["Olá, gostaria de saber sobre os serviços da empresa..."]
-    )
-
-
-class EmailClassifyResponse(BaseModel):
-    """Response da classificação (endpoint legado /classify)"""
-    classification: Literal["produtivo", "improdutivo"] = Field(..., description="Classificação do email")
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Confiança da classificação (0-1)")
-    reasoning: str = Field(..., description="Explicação da classificação")
-    suggestions: List[ResponseSuggestion] = Field(default_factory=list)
-
-
-# --- /analyze (novo endpoint) ---
+# --- /analyze ---
 
 EMAIL_CATEGORIES = Literal[
     "Proposta Comercial",

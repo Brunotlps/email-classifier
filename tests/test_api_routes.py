@@ -19,52 +19,16 @@ _VALID_ANALYSIS = {
 }
 
 
-class TestClassifyEndpoint:
-    """Testes do endpoint /api/v1/classify"""
+class TestRemovedLegacyEndpoint:
+    """Testes da remoção do endpoint legado."""
 
-    def test_classify_endpoint_exists(self):
-        response = client.post("/api/v1/classify", json={"email_content": "test"})
-        assert response.status_code != 404
+    def test_classify_returns_404(self):
+        response = client.post(
+            "/api/v1/classify",
+            json={"email_content": "Olá, podemos marcar uma reunião amanhã?"},
+        )
 
-    def test_classify_with_valid_email(self):
-        payload = {
-            "email_content": "Olá, gostaria de agendar uma reunião para discutir parceria."
-        }
-        response = client.post("/api/v1/classify", json=payload, timeout=30.0)
-        assert response.status_code == 200
-        data = response.json()
-        assert "classification" in data
-        assert data["classification"] in ["produtivo", "improdutivo"]
-        assert "confidence" in data
-        assert 0 <= data["confidence"] <= 1
-        assert "reasoning" in data
-        assert "suggestions" in data
-
-    def test_classify_with_short_email_fails(self):
-        response = client.post("/api/v1/classify", json={"email_content": "oi"})
-        assert response.status_code == 422
-
-    def test_classify_without_email_content_fails(self):
-        response = client.post("/api/v1/classify", json={})
-        assert response.status_code == 422
-
-    @pytest.mark.asyncio
-    async def test_classify_invalid_ai_response_returns_sanitized_502(self):
-        raw_response = "malformed model output with private content"
-        with patch.object(routes.classifier.ai_client, "generate", new_callable=AsyncMock) as mock:
-            mock.return_value = raw_response
-            transport = ASGITransport(app=app)
-            async with AsyncClient(transport=transport, base_url="http://testserver") as async_client:
-                response = await async_client.post(
-                    "/api/v1/classify",
-                    json={"email_content": "Valid email content for the classifier."},
-                )
-
-        assert response.status_code == 502
-        assert response.json() == {
-            "detail": "O serviço de IA retornou uma resposta inválida. Tente novamente."
-        }
-        assert raw_response not in response.text
+        assert response.status_code == 404
 
 
 class TestAnalyzeEndpoint:
@@ -248,12 +212,14 @@ class TestHealthEndpoints:
         assert response.status_code == 200
         assert response.json()["status"] == "healthy"
 
-    def test_classification_health_endpoint(self):
+    def test_analysis_health_endpoint(self):
         response = client.get("/api/v1/health")
         assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "healthy"
-        assert data["service"] == "email-classification"
+        assert response.json() == {
+            "status": "healthy",
+            "service": "email-analysis",
+            "analyzer": "operational",
+        }
 
     def test_test_ai_endpoint(self):
         response = client.get("/test-ai", timeout=30.0)
@@ -275,7 +241,14 @@ class TestSwaggerDocs:
         assert response.status_code == 200
         data = response.json()
         assert "info" in data
-        assert data["info"]["title"] == "Email Classifier API"
+        assert data["info"]["title"] == "BriskMail API"
+
+    def test_openapi_exposes_only_active_analysis_endpoints(self):
+        paths = client.get("/openapi.json").json()["paths"]
+
+        assert "/api/v1/classify" not in paths
+        assert "/api/v1/analyze" in paths
+        assert "/api/v1/classify-file" in paths
 
     @pytest.mark.asyncio
     async def test_ai_endpoints_document_invalid_response_as_502(self):
@@ -286,5 +259,4 @@ class TestSwaggerDocs:
         assert response.status_code == 200
         paths = response.json()["paths"]
         assert "502" in paths["/api/v1/analyze"]["post"]["responses"]
-        assert "502" in paths["/api/v1/classify"]["post"]["responses"]
         assert "502" in paths["/api/v1/classify-file"]["post"]["responses"]

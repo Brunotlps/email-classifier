@@ -1,21 +1,14 @@
-import structlog
-
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Request
 from app.models.schemas import (
-    EmailClassifyRequest, EmailClassifyResponse,
     EmailAnalyzeRequest, EmailAnalysisResponse,
     ResponseSuggestion,
 )
-from app.services.classifier import EmailClassifier
-from app.services.response_generator import ResponseGenerator
 from app.services.analyzer import EmailAnalyzer
 from app.utils.file_parser import FileParser
 from app.exceptions import InvalidAIResponseError
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-
-logger = structlog.get_logger()
 
 INVALID_AI_RESPONSE_DETAIL = "O serviço de IA retornou uma resposta inválida. Tente novamente."
 INVALID_AI_RESPONSE_RESPONSES = {
@@ -24,89 +17,16 @@ INVALID_AI_RESPONSE_RESPONSES = {
     }
 }
 
-router = APIRouter(prefix="/api/v1", tags=["Classification"])
+router = APIRouter(prefix="/api/v1", tags=["Analysis"])
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
-# Instanciando os serviços (usar injeção de dependência futuramente)
-classifier = EmailClassifier()
-response_generator = ResponseGenerator()
+# Instanciando o serviço (usar injeção de dependência futuramente)
 analyzer = EmailAnalyzer()
 
 # Criação das rotas
 
-@limiter.limit("10/minute")
-@router.post(
-    "/classify",
-    response_model=EmailClassifyResponse,
-    status_code=status.HTTP_200_OK,
-    responses=INVALID_AI_RESPONSE_RESPONSES,
-    summary="Classifica um email",
-    description="""
-        Classifica um email como produtivo ou improdutivo usando IA.
-        
-        Se o email for classificado como **produtivo**, também retorna sugestões de resposta.
-        
-        **Produtivo**: Emails que requerem ação, oportunidades de negócio, solicitações legítimas.
-        
-        **Improdutivo**: Spam, marketing não solicitado, emails sem valor."""
-)
-async def classify_email(request: Request, email_request: EmailClassifyRequest):
-    """
-    Endpoint principal de classificação de emails.
-    
-    Args:
-            request: EmailClassifyRequest com o conteúdo do email
-            
-    Returns:
-            EmailClassifyResponse com classificação e sugestões (se aplicável)
-            
-    Raises:
-            HTTPException 400: Se email inválido
-            HTTPException 502: Se a IA retornar uma resposta inválida
-            HTTPException 500: Se ocorrer um erro interno inesperado
-    """
-
-    try:
-        classification_result = await classifier.classify(email_request.email_content)
-        suggestions = []
-
-        if classification_result["classification"] == "produtivo":
-            try:
-                suggestions = await response_generator.generate_suggestions(email_content=email_request.email_content, num_suggestions=2)
-            
-            except Exception as e:
-                # Não será necessário parar as requisições em caso de falha ao gerar sugestões de respostas
-                logger.warning("suggestion_generation_failed", error=str(e))
-                suggestions = []
-
-        response = EmailClassifyResponse(
-            classification=classification_result["classification"],
-            confidence=classification_result["confidence"],
-            reasoning=classification_result["reasoning"],
-            suggestions=suggestions
-        )
-
-        return response
-    
-    except InvalidAIResponseError as e:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=INVALID_AI_RESPONSE_DETAIL,
-        ) from e
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Erro ao tentar processar email: {str(e)}"
-        )
-    
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro interno ao tentar classificar email: {str(e)}"
-        )
-    
 @limiter.limit("10/minute")
 @router.post(
     "/analyze",
@@ -157,19 +77,19 @@ async def analyze_email(request: Request, email_request: EmailAnalyzeRequest):
 
 @router.get(
     "/health",
-    summary="Health check da API de classificação",
+    summary="Health check da API de análise",
     tags=["health"]
 )
-async def classification_health():
+async def analysis_health():
     """
-    Verifica se o serviço de classificação está operacional.
+    Verifica se o serviço de análise está operacional.
     """
     return {
-            "status": "healthy",
-            "service": "email-classification",
-            "classifier": "operational",
-            "response_generator": "operational"
+        "status": "healthy",
+        "service": "email-analysis",
+        "analyzer": "operational",
     }
+
 
 @router.post(
     "/classify-file",
