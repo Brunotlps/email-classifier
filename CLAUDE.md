@@ -64,10 +64,10 @@ docker exec -it email_classifier_api pytest tests/ -v
 docker exec -it email_classifier_api pytest tests/ --cov=app --cov-report=term
 
 # Single test file
-docker exec -it email_classifier_api pytest tests/test_classifier.py -v
+docker exec -it email_classifier_api pytest tests/test_analyzer.py -v
 
 # Single test function
-docker exec -it email_classifier_api pytest tests/test_classifier.py::TestEmailClassifier::test_classify_produtivo_success -v
+docker exec -it email_classifier_api pytest tests/test_analyzer.py::TestEmailAnalyzer::test_analyze_success_returns_all_fields -v
 
 # Skip slow/integration tests
 docker exec -it email_classifier_api pytest tests/ -m "not slow and not integration"
@@ -145,9 +145,7 @@ email-classifier/
 │   ├── models/
 │   │   └── schemas.py                 # Pydantic request/response models (language field: Literal["pt","en"])
 │   ├── services/
-│   │   ├── analyzer.py                # EmailAnalyzer: main service (summary, category, priority, suggestions)
-│   │   ├── classifier.py              # EmailClassifier: legacy cache + retry + prompt engineering
-│   │   └── response_generator.py      # ResponseGenerator: suggestion generation + tone normalization
+│   │   └── analyzer.py                # EmailAnalyzer: main service (summary, category, priority, suggestions)
 │   └── utils/
 │       ├── ai_client.py               # AIClient ABC + OllamaClient + OpenAIClient + factory
 │       ├── ai_response.py             # Safe diagnostics for invalid AI responses
@@ -155,8 +153,6 @@ email-classifier/
 ├── tests/
 │   ├── conftest.py                    # Shared fixtures (sample emails, temp files)
 │   ├── test_analyzer.py               # Unit tests for EmailAnalyzer
-│   ├── test_classifier.py             # Unit tests for EmailClassifier
-│   ├── test_response_generator.py     # Unit tests for ResponseGenerator
 │   ├── test_file_parser.py            # Unit tests for FileParser
 │   └── test_api_routes.py             # Integration tests for HTTP endpoints
 ├── frontend/
@@ -194,7 +190,6 @@ email-classifier/
 |---|---|---|
 | `POST /api/v1/analyze` | `EmailAnalyzer` | **Primary** — used by both the Chrome extension (`extension/background.js`) and the web frontend (`frontend/js/app.js`) |
 | `POST /api/v1/classify-file` | `FileParser` + `EmailAnalyzer` | **Primary** — used by the web frontend for `.txt`/`.eml`/`.pdf` uploads |
-| `POST /api/v1/classify` | `EmailClassifier` + `ResponseGenerator` | **Unused by clients** — kept only for `tests/test_classifier.py`, `tests/test_response_generator.py`, and `tests/test_api_routes.py::TestClassifyEndpoint`. Do not extend; removal is a deliberate decision (see `docs/DECISIONS.md`), not something to bundle into unrelated changes. |
 
 ### Layer structure and responsibilities
 
@@ -203,8 +198,8 @@ HTTP Request
     ↓
 app/api/routes.py          → validates input via Pydantic, calls services, maps exceptions to HTTP codes
     ↓
-app/services/classifier.py → SHA-256 cache key → TTLCache lookup → AI call with retry → JSON parse + validate
-app/services/response_generator.py → AI call → JSON parse → tone normalization → ResponseSuggestion objects
+app/utils/file_parser.py   → extracts email text from .txt / .eml / .pdf uploads
+app/services/analyzer.py   → language-aware cache → AI call with retry → JSON parse + validation
     ↓
 app/utils/ai_client.py     → factory pattern: get_ai_client() returns OllamaClient or OpenAIClient
     ↓
@@ -215,25 +210,21 @@ Ollama (dev) / OpenAI (prod)
 `get_ai_client()` in `ai_client.py` returns `OllamaClient` or `OpenAIClient` based on `settings.ai_provider` (`AI_PROVIDER` env var). Both implement the `AIClient` ABC with a single `async generate(prompt, system_prompt) -> str` method. Switching providers requires only an env var change — no code changes.
 
 ### Caching and retry
-`EmailClassifier` uses `TTLCache(maxsize=100, ttl=3600)` keyed by `SHA-256(email_content)`. Cache hits return immediately without any AI call. The AI call itself is decorated with `@retry(stop_after_attempt(3), wait_exponential(multiplier=1, min=1, max=10))` from tenacity. `ResponseGenerator` has no cache — only `EmailClassifier` caches.
+`EmailAnalyzer` uses `TTLCache(maxsize=100, ttl=3600)` keyed by `SHA-256(language + email_content)`. Cache hits return immediately without any AI call. The AI call itself is decorated with `@retry(stop_after_attempt(3), wait_exponential(multiplier=1, min=1, max=10))` from tenacity.
 
-### Suggestion generation is non-blocking
-In `routes.py`, if `ResponseGenerator.generate_suggestions()` throws, the exception is caught and `suggestions=[]` is returned. Classification results are never blocked by suggestion failures.
+### Suggestion generation
+`EmailAnalyzer` returns contextual suggestions in the same AI response as summary, category, priority, and action status. `routes.py` converts valid suggestion items into the shared `ResponseSuggestion` schema for both active analysis endpoints.
 
 ### Prompt engineering pattern
-Both `EmailClassifier` and `ResponseGenerator` follow the same pattern:
-1. `_build_system_prompt()` — defines role, criteria, and strict JSON-only output format
-2. `_build_user_prompt(email_content)` — wraps the email between `---` delimiters
-3. `_extract_json(response)` — uses `re.search(r'\{.*\}', text, re.DOTALL)` to strip any non-JSON text the model adds
-4. `_parse_response()` / `_parse_suggestions()` — validates required fields and value ranges
+`EmailAnalyzer` combines a strict JSON-only system prompt with a language instruction and an email body wrapped in `---` delimiters. `_parse()` uses `re.search(r'\{.*\}', text, re.DOTALL)` to isolate JSON before validating required fields and allowed values.
 
 ### Docker networking for Ollama
 The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (the Docker bridge gateway IP) because `localhost` inside the container refers to the container itself, not the host. `config.py` has `_adjust_ollama_url()` that auto-swaps `localhost` ↔ `host.docker.internal`, but this is overridden by the hardcoded IP in compose. **If the Docker bridge gateway IP changes on a new machine, update `OLLAMA_BASE_URL` in `docker-compose.yml`.**
 
 ### Pydantic schemas
-- `EmailClassifyRequest`: `email_content: str` with `min_length=10` (enforced at the HTTP layer — returns 422 for short emails)
+- `EmailAnalyzeRequest`: `email_content: str` with `min_length=10` and `language: Literal["pt", "en"]`
 - `ResponseSuggestion`: `tone` is a `Literal["formal", "cordial", "casual", "técnico"]`
-- `EmailClassifyResponse`: `suggestions` defaults to `[]` via `default_factory=list`
+- `EmailAnalysisResponse`: `suggestions` defaults to `[]` via `default_factory=list`
 
 ---
 
@@ -259,8 +250,8 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 ## Tests
 
 ### Strategy
-- **Unit tests** (`test_classifier.py`, `test_response_generator.py`): mock the AI client with `patch.object(instance.ai_client, 'generate', new_callable=AsyncMock)`. Never make real AI calls in unit tests.
-- **Integration tests** (`test_api_routes.py`): use `fastapi.testclient.TestClient` with a real app instance. The `test_classify_with_valid_email` and `test_classify_file_with_txt` tests call the real AI (Ollama must be running) — these need `timeout=30.0`.
+- **Unit tests** (`test_analyzer.py`): mock the AI client with `patch.object(instance.ai_client, 'generate', new_callable=AsyncMock)`. Never make real AI calls in unit tests.
+- **Integration tests** (`test_api_routes.py`): use `fastapi.testclient.TestClient` with a real app instance. Analysis calls are mocked; `test_test_ai_endpoint` is the explicit Ollama-dependent connectivity test and uses `timeout=30.0`.
 - **File parser tests** (`test_file_parser.py`): fully synchronous, no mocking needed.
 
 ### CI
@@ -276,16 +267,8 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 | `sample_large_file` | ~6MB `.txt` to trigger size limit |
 | `fixtures_dir` | Path to `tests/fixtures/` directory |
 
-### Coverage by module
-| Module | Coverage |
-|---|---|
-| `schemas.py` | 100% |
-| `analyzer.py` | 95% |
-| `classifier.py` | 98% |
-| `response_generator.py` | 98% |
-| `main.py` | 86% |
-| `config.py` | 85% |
-| **Total** | **84%** |
+### Coverage
+Run the coverage command above to obtain the current report. Do not copy a static percentage into project documentation without confirming it against the current tree.
 
 ### asyncio configuration
 `pytest.ini` sets `asyncio_mode = auto` — all `async def test_*` functions are automatically treated as async tests without needing `@pytest.mark.asyncio` (though the existing tests include it explicitly for clarity).

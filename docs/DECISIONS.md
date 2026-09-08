@@ -48,3 +48,11 @@ A few non-obvious constraints shape `extension/` code:
 ## 6. Cache key includes language
 
 `EmailAnalyzer`'s cache key is `sha256(f"{language}:{email_content}")` (`app/services/analyzer.py`), so PT and EN analyses of the same email content are cached independently and don't collide. This differs from the legacy `EmailClassifier`, whose cache key is `sha256(email_content)` only (no language dimension — it predates PT/EN support).
+
+## 7. The legacy `/api/v1/classify` flow is removed
+
+This decision supersedes entry 4. `POST /api/v1/classify`, `app/services/classifier.py`, `app/services/response_generator.py`, and their dedicated schemas and tests have been removed. The endpoint now follows normal FastAPI routing behavior: it returns HTTP 404 and is absent from OpenAPI, with no redirect, alias, tombstone, or compatibility layer.
+
+**Why**: the Chrome extension and web frontend already use `POST /api/v1/analyze`; file uploads continue to use the active `POST /api/v1/classify-file` endpoint backed by `FileParser` and `EmailAnalyzer`. Keeping a second, client-unused binary-classification path increased maintenance cost and exposed an uncalibrated model-reported confidence value without serving a current product flow.
+
+**Issue impact**: this removal supersedes the documentation fix requested by #18 and makes the legacy-service test follow-ups #11 and #12 obsolete. Issues #14 and #15 remain valid for `EmailAnalyzer` and `AIClient` and are not changed by this decision.

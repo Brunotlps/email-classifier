@@ -6,7 +6,6 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat&logo=openai&logoColor=white)](https://openai.com/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Tests](https://img.shields.io/badge/Coverage-84%25-green?style=flat)]()
 [![Backend](https://img.shields.io/badge/Backend-Fly.io-blueviolet?style=flat)](https://email-classifier-api.fly.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -55,9 +54,7 @@ email-classifier/
 │   ├── api/routes.py              # REST endpoints, rate limiting, HTTP error mapping
 │   ├── models/schemas.py          # Pydantic request/response models
 │   ├── services/
-│   │   ├── analyzer.py            # EmailAnalyzer: summary, category, priority, suggestions (primary)
-│   │   ├── classifier.py          # EmailClassifier: legacy, powers /classify (unused by clients — see docs/DECISIONS.md)
-│   │   └── response_generator.py  # Reply suggestion generator
+│   │   └── analyzer.py            # EmailAnalyzer: summary, category, priority, suggestions
 │   ├── utils/
 │   │   ├── ai_client.py           # AIClient ABC + OllamaClient + OpenAIClient + factory
 │   │   ├── ai_response.py         # Safe diagnostics for invalid AI responses
@@ -84,7 +81,6 @@ email-classifier/
 │   ├── conftest.py
 │   ├── test_api_routes.py
 │   ├── test_analyzer.py
-│   ├── test_response_generator.py
 │   └── test_file_parser.py
 ├── docker-compose.yml
 ├── Dockerfile
@@ -100,13 +96,11 @@ email-classifier/
 
 **Language-aware cache** — cache key is `SHA-256(language + email_content)`, so PT and EN analyses for the same email are cached independently.
 
-**Graceful degradation** — if reply suggestion generation fails, classification still returns successfully with `suggestions: []`. The critical path is never blocked.
-
-**Prompt engineering pattern** — both `EmailAnalyzer` and `ResponseGenerator` follow: `_build_system_prompt` → `_build_user_prompt` → AI call → `_extract_json` (regex, tolerates model commentary) → `_parse_response` (validates fields).
+**Prompt engineering pattern** — `EmailAnalyzer` combines a strict JSON-only system prompt with a language instruction and delimited email body, then parses and validates the model response.
 
 **DOM-based Gmail integration** — the extension reads email content via `div.a3s.innerText` and uses `MutationObserver` to detect newly opened emails. No OAuth required for the MVP.
 
-**Legacy `/classify` endpoint** — `app/services/classifier.py` and `response_generator.py` power `POST /api/v1/classify`, a binary produtivo/improdutivo classifier. Neither the Chrome extension nor the web frontend call it; it's kept for its existing test coverage. See `docs/DECISIONS.md` for details.
+**Focused API surface** — text analysis uses `POST /api/v1/analyze`; file uploads use `POST /api/v1/classify-file` and the same `EmailAnalyzer` response contract.
 
 ---
 
@@ -170,7 +164,6 @@ docker exec -it email_classifier_api pytest tests/ -m "not slow and not integrat
 | Web frontend | Live on Vercel |
 | Chrome Extension | Submitted for Chrome Web Store review |
 | PT/EN support | Complete |
-| Test coverage | 84% |
 
 ---
 
@@ -179,7 +172,7 @@ docker exec -it email_classifier_api pytest tests/ -m "not slow and not integrat
 **Next (post-store approval)**
 - Add Chrome Web Store link to this README
 - Collect real user feedback
-- Expand test coverage to 90%+
+- Expand test coverage around active analysis flows
 
 **Medium term**
 - Gmail API + OAuth (replace DOM scraping for robustness)

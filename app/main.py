@@ -89,8 +89,8 @@ async def root():
 async def health():
     return {"status": "healthy"}
 
-from app.api.routes import router as classification_router
-app.include_router(classification_router)
+from app.api.routes import router as analysis_router
+app.include_router(analysis_router)
 
 @app.get("/test-ai")
 async def test_ai():
@@ -114,4 +114,3 @@ async def test_ai():
                         "status": "error",
                         "error": str(e)
                 }
-
