@@ -130,6 +130,16 @@ Green: 11 focused tests and all 65 Python tests passed; actionlint passed. A rea
 temporary local HTTP server confirmed CLI exit 0 for healthy HTTP 200 and exit 1
 for HTTP 200 with an error body. Docker build and isolated `/health` smoke passed.
 
+[PR #30](https://github.com/Brunotlps/email-classifier/pull/30) remote evidence:
+
+- [Initial green CI](https://github.com/Brunotlps/email-classifier/actions/runs/34398063559)
+  at `d913e17`: Python, extension, container and ci-gate passed; deploy skipped.
+- [Controlled failure](https://github.com/Brunotlps/email-classifier/actions/runs/34398245915)
+  at `772b2fb`: an additional synthetic test failed, Python/ci-gate failed and
+  deploy stayed skipped. The synthetic test was then removed; no application
+  test was disabled. This is a PR-side exclusion check; main's gate dependency
+  is also checked structurally and must be confirmed in the authorized main run.
+
 Remote acceptance requires a green PR with deploy skipped, a controlled failing
 CI with deploy skipped, approved Production settings/credentials, and an
 authorized main run proving gate-before-deploy for the same SHA, healthy Fly
