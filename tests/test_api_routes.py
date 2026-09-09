@@ -222,11 +222,27 @@ class TestHealthEndpoints:
         }
 
     def test_test_ai_endpoint(self):
-        response = client.get("/test-ai", timeout=30.0)
+        with patch("app.utils.ai_client.get_ai_client") as factory:
+            factory.return_value.generate = AsyncMock(return_value="Olá!")
+            response = client.get("/test-ai")
+
+        factory.return_value.generate.assert_awaited_once_with(
+            prompt="Me diga olá em uma frase curta",
+            system_prompt="Você é um assistente útil",
+        )
         assert response.status_code == 200
         data = response.json()
-        assert "status" in data
-        assert "provider" in data
+        assert data["status"] == "success"
+        assert data["provider"] == "ollama"
+        assert data["response"] == "Olá!"
+
+    def test_test_ai_unavailable_provider_returns_error_body(self):
+        with patch("app.utils.ai_client.get_ai_client") as factory:
+            factory.return_value.generate = AsyncMock(side_effect=RuntimeError("AI unavailable"))
+            response = client.get("/test-ai")
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "error", "error": "AI unavailable"}
 
 
 class TestSwaggerDocs:
