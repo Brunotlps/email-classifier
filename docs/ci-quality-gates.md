@@ -103,8 +103,12 @@ Remote evidence in [PR #29](https://github.com/Brunotlps/email-classifier/pull/2
   `ci-gate` failed while extension and container passed. That probe was then
   removed without removing or weakening any application test.
 - The controlled revision initially received no CI run after push; reopening the
-  PR triggered the failure run. Verify automatic synchronization on the restored
-  revision before declaring remote acceptance complete.
+  PR triggered the failure run. A second, later failure run also appeared.
+  The cause of this initial delay was not established.
+- [Restored revision](https://github.com/Brunotlps/email-classifier/actions/runs/34348140360)
+  at `652cb02`: updating the PR automatically triggered CI and all four jobs
+  passed in 38 seconds. The final documentation-only revision must also receive
+  green checks before merge.
 
 ## Protection activation and delivery boundary
 
