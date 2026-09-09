@@ -94,6 +94,18 @@ Red → Green:
   networking is disabled. PR execution and a controlled failing revision provide
   the remote scheduler/gate evidence; link those runs in the PR.
 
+Remote evidence in [PR #29](https://github.com/Brunotlps/email-classifier/pull/29):
+
+- [Initial green run](https://github.com/Brunotlps/email-classifier/actions/runs/34347260665)
+  at `7ae4678`: all four jobs succeeded in 49 seconds including scheduling.
+- [Controlled failure](https://github.com/Brunotlps/email-classifier/actions/runs/34347838464)
+  at `3d844a0`: an additional temporary test deliberately failed; Python and
+  `ci-gate` failed while extension and container passed. That probe was then
+  removed without removing or weakening any application test.
+- The controlled revision initially received no CI run after push; reopening the
+  PR triggered the failure run. Verify automatic synchronization on the restored
+  revision before declaring remote acceptance complete.
+
 ## Protection activation and delivery boundary
 
 After the first green PR run, obtain explicit owner approval immediately before
