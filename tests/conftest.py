@@ -1,4 +1,40 @@
+import os
+import socket
+
 import pytest
+
+
+# Definido antes da coleta/importação da aplicação; nunca usa credenciais locais.
+os.environ.update(
+    AI_PROVIDER="ollama",
+    OPENAI_API_KEY="",
+    OLLAMA_BASE_URL="http://127.0.0.1:1",
+    ENVIRONMENT="test",
+)
+
+
+@pytest.fixture(autouse=True)
+def block_external_network(monkeypatch):
+    """Falha em conexões IP/DNS; preserva sockets Unix usados pelo asyncio."""
+    original_connect = socket.socket.connect
+    original_connect_ex = socket.socket.connect_ex
+
+    def blocked(*args, **kwargs):
+        pytest.fail("External network is disabled in tests; mock the AI/HTTP client")
+
+    def connect(sock, address):
+        if sock.family in (socket.AF_INET, socket.AF_INET6):
+            blocked()
+        return original_connect(sock, address)
+
+    def connect_ex(sock, address):
+        if sock.family in (socket.AF_INET, socket.AF_INET6):
+            blocked()
+        return original_connect_ex(sock, address)
+
+    monkeypatch.setattr(socket.socket, "connect", connect)
+    monkeypatch.setattr(socket.socket, "connect_ex", connect_ex)
+    monkeypatch.setattr(socket, "getaddrinfo", blocked)
 
 
 @pytest.fixture
