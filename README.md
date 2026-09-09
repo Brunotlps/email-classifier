@@ -139,6 +139,11 @@ curl -X POST http://localhost:8001/api/v1/analyze \
 
 ### Running tests
 
+The required CI runs Python 3.11 tests without external AI services, validates the
+extension with Node 24, and builds and smoke-tests the Docker image. See
+[CI quality gates](docs/ci-quality-gates.md) for equivalent local commands,
+acceptance evidence, and the required `ci-gate` branch protection setup.
+
 ```bash
 docker exec -it email_classifier_api pytest tests/ -v
 docker exec -it email_classifier_api pytest tests/ --cov=app --cov-report=term

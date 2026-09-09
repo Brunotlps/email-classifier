@@ -251,11 +251,11 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 
 ### Strategy
 - **Unit tests** (`test_analyzer.py`): mock the AI client with `patch.object(instance.ai_client, 'generate', new_callable=AsyncMock)`. Never make real AI calls in unit tests.
-- **Integration tests** (`test_api_routes.py`): use `fastapi.testclient.TestClient` with a real app instance. Analysis calls are mocked; `test_test_ai_endpoint` is the explicit Ollama-dependent connectivity test and uses `timeout=30.0`.
+- **API tests** (`test_api_routes.py`): use `fastapi.testclient.TestClient` or ASGI transport with a real app instance. All AI calls, including `/test-ai`, are mocked. `tests/conftest.py` supplies test-only provider settings and blocks IP connections and DNS resolution during tests.
 - **File parser tests** (`test_file_parser.py`): fully synchronous, no mocking needed.
 
 ### CI
-`.github/workflows/fly-deploy.yml` deploys to Fly.io on every push to `main` but does **not** run the test suite. `pytest` is a manual / PR-review gate — run it locally before merging.
+`.github/workflows/ci.yml` runs Python, extension, and container checks on every pull request to `main` and push to `main`, with an always-evaluated `ci-gate` aggregator. See `docs/ci-quality-gates.md` for local commands and protection activation. `.github/workflows/fly-deploy.yml` still deploys independently on pushes to `main`; gating deployment is tracked separately in #26. Merging therefore still triggers production deployment and requires explicit authorization.
 
 ### Fixtures (conftest.py)
 | Fixture | Description |
