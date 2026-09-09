@@ -15,6 +15,14 @@ primary_region = 'gru'
   auto_start_machines = true
   min_machines_running = 1
 
+  # FastAPI startup allowance; /health does not call an AI provider.
+  [[http_service.checks]]
+    method = 'GET'
+    path = '/health'
+    interval = '15s'
+    timeout = '5s'
+    grace_period = '10s'
+
 [[vm]]
   memory = '256mb'
   cpu_kind = 'shared'

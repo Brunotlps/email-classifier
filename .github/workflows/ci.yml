@@ -11,7 +11,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel stale PR checks, but never interrupt a production deployment.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -85,3 +86,10 @@ jobs:
               exit 1
             fi
           done
+
+  deploy:
+    needs: [ci-gate]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/fly-deploy.yml
+    permissions:
+      contents: read

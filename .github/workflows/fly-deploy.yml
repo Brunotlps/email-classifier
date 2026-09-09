@@ -1,18 +1,52 @@
-# See https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
-
 name: Fly Deploy
+
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
+
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy app
-    runs-on: ubuntu-latest
-    concurrency: deploy-group    # optional: ensure only one action runs at a time
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: Production
+      url: https://email-classifier-api.fly.dev
+    concurrency:
+      group: deploy-group
+      cancel-in-progress: false
+    defaults:
+      run:
+        shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only --depot=false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
+        with:
+          version: '0.4.101'
+      - name: Deploy the exact commit validated by ci-gate
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          test -n "$FLY_API_TOKEN"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "Deploying validated commit $GITHUB_SHA"
+          flyctl deploy --app email-classifier-api --remote-only --depot=false \
+            --image-label "$GITHUB_SHA" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA"
+      - name: Check public health after deployment
+        timeout-minutes: 2
+        run: python3 scripts/ci/public_health.py https://email-classifier-api.fly.dev/health
+      - name: Record successful deployment
+        run: |
+          {
+            echo '### Fly production deployment'
+            echo "Validated and deployed commit: $GITHUB_SHA"
+            echo "Image tag: registry.fly.io/email-classifier-api:$GITHUB_SHA"
+            echo 'Public /health: HTTP 200 and healthy JSON'
+          } >> "$GITHUB_STEP_SUMMARY"
