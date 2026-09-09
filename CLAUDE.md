@@ -242,7 +242,7 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 ## Branching
 
 - Feature work happens on a branch (historically `claude-edits`), opened as a PR into `main`, then merged.
-- `main` is the deploy branch — every push to `main` triggers `.github/workflows/fly-deploy.yml` (see CI note under Tests).
+- `main` is the deploy branch — each push triggers CI; only a successful `ci-gate` can call `.github/workflows/fly-deploy.yml` for that commit (see CI note under Tests).
 - The branch `copilot-worktree-2026-01-25T20-00-23` is a stale agent worktree artifact, not part of the active workflow — safe to delete after confirming no in-progress work depends on it.
 
 ---
@@ -255,7 +255,7 @@ The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (th
 - **File parser tests** (`test_file_parser.py`): fully synchronous, no mocking needed.
 
 ### CI
-`.github/workflows/ci.yml` runs Python, extension, and container checks on every pull request to `main` and push to `main`, with an always-evaluated `ci-gate` aggregator. See `docs/ci-quality-gates.md` for local commands and protection activation. `.github/workflows/fly-deploy.yml` still deploys independently on pushes to `main`; gating deployment is tracked separately in #26. Merging therefore still triggers production deployment and requires explicit authorization.
+`.github/workflows/ci.yml` runs Python, extension, and container checks on every pull request to `main` and push to `main`, with an always-evaluated `ci-gate` aggregator. On main pushes only, the gate unlocks the reusable Fly workflow for the same SHA. PR jobs cannot deploy. See `docs/ci-quality-gates.md` and `docs/fly-production-deploy.md`; production environment/credential changes, merge and deployment require explicit authorization.
 
 ### Fixtures (conftest.py)
 | Fixture | Description |

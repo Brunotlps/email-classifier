@@ -144,6 +144,9 @@ extension with Node 24, and builds and smoke-tests the Docker image. See
 [CI quality gates](docs/ci-quality-gates.md) for equivalent local commands,
 acceptance evidence, and the required `ci-gate` branch protection setup.
 
+Production delivery follows [Fly production delivery](docs/fly-production-deploy.md):
+the main commit must pass `ci-gate` before the Production deployment can run.
+
 ```bash
 docker exec -it email_classifier_api pytest tests/ -v
 docker exec -it email_classifier_api pytest tests/ --cov=app --cov-report=term

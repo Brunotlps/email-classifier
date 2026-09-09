@@ -56,3 +56,14 @@ This decision supersedes entry 4. `POST /api/v1/classify`, `app/services/classif
 **Why**: the Chrome extension and web frontend already use `POST /api/v1/analyze`; file uploads continue to use the active `POST /api/v1/classify-file` endpoint backed by `FileParser` and `EmailAnalyzer`. Keeping a second, client-unused binary-classification path increased maintenance cost and exposed an uncalibrated model-reported confidence value without serving a current product flow.
 
 **Issue impact**: this removal supersedes the documentation fix requested by #18 and makes the legacy-service test follow-ups #11 and #12 obsolete. Issues #14 and #15 remain valid for `EmailAnalyzer` and `AIClient` and are not changed by this decision.
+
+## 8. Production deployment shares the CI dependency graph (#26)
+
+CI calls a reusable Fly deployment workflow only after `ci-gate` succeeds on a
+push to `main`, using the same immutable Git commit. There is no independent
+deployment push trigger or privileged `workflow_run` consuming PR output. Main
+runs are serialized without cancellation so new commits cannot interrupt a
+running production rollout; PR runs retain cancellation. `Production` holds the
+deployment approval and environment token. This makes the dependency explicit
+without a second CI run or polling the checks API. See `fly-production-deploy.md`
+for activation, credential scope validation and operational limits.
