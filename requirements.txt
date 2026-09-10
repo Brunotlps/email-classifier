@@ -10,7 +10,7 @@ openai==1.51.2
 
 python-dotenv==1.0.1
 
-python-multipart==0.0.12 # Pra aceitar upload de arquivos
+python-multipart==0.0.31 # Pra aceitar upload de arquivos
 
 fastapi-cors==0.0.6
 
