@@ -1,52 +1,21 @@
 name: Fly Deploy
 
+# Deployment lives in ci.yml so the Production environment secret is resolved by
+# the same workflow job that requests its approval. This pointer cannot deploy.
 on:
-  workflow_call:
+  workflow_dispatch:
+    inputs:
+      disabled:
+        description: Reserved; direct execution is not supported.
+        required: true
+        type: boolean
+        default: false
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
-  deploy:
-    name: Deploy app
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+  disabled:
+    if: ${{ github.ref == 'refs/heads/never-deploy' && inputs.disabled == true }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    environment:
-      name: Production
-      url: https://email-classifier-api.fly.dev
-    concurrency:
-      group: deploy-group
-      cancel-in-progress: false
-    defaults:
-      run:
-        shell: bash
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
-        with:
-          version: '0.4.101'
-      - name: Deploy the exact commit validated by ci-gate
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: |
-          test -n "$FLY_API_TOKEN"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "Deploying validated commit $GITHUB_SHA"
-          flyctl deploy --app email-classifier-api --remote-only --depot=false \
-            --image-label "$GITHUB_SHA" \
-            --label "org.opencontainers.image.revision=$GITHUB_SHA"
-      - name: Check public health after deployment
-        timeout-minutes: 2
-        run: python3 scripts/ci/public_health.py https://email-classifier-api.fly.dev/health
-      - name: Record successful deployment
-        run: |
-          {
-            echo '### Fly production deployment'
-            echo "Validated and deployed commit: $GITHUB_SHA"
-            echo "Image tag: registry.fly.io/email-classifier-api:$GITHUB_SHA"
-            echo 'Public /health: HTTP 200 and healthy JSON'
-          } >> "$GITHUB_STEP_SUMMARY"
+      - run: exit 1

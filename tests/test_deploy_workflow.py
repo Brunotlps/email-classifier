@@ -20,24 +20,23 @@ def test_deploy_requires_gate_in_the_same_run_and_main_push():
     deploy = ci["jobs"]["deploy"]
     assert deploy["needs"] == ["ci-gate"]
     assert deploy["if"] == MAIN_PUSH
-    assert deploy["uses"] == "./.github/workflows/fly-deploy.yml"
-    assert "secrets" not in deploy
+    assert deploy["environment"]["name"] == "Production"
+    assert deploy["permissions"] == {"contents": "read"}
     assert ci["concurrency"]["cancel-in-progress"] == "${{ github.event_name == 'pull_request' }}"
 
 
-def test_reusable_deploy_has_no_independent_trigger_or_untrusted_ref():
+def test_legacy_deploy_pointer_cannot_deploy():
     deploy_workflow = workflow("fly-deploy.yml")
-    assert set(deploy_workflow["on"]) == {"workflow_call"}
-    assert deploy_workflow["permissions"] == {"contents": "read"}
-    job = deploy_workflow["jobs"]["deploy"]
-    assert job["if"] == MAIN_PUSH
-    assert job["environment"]["name"] == "Production"
-    assert job["concurrency"] == {"group": "deploy-group", "cancel-in-progress": "false"}
-    assert 0 < int(job["timeout-minutes"]) <= 20
-    checkout = job["steps"][0]
-    assert checkout["with"]["ref"] == "${{ github.sha }}"
-    assert checkout["with"]["persist-credentials"] == "false"
-    for step in job["steps"]:
+    assert set(deploy_workflow["on"]) == {"workflow_dispatch"}
+    assert deploy_workflow["permissions"] == {}
+    assert "never-deploy" in deploy_workflow["jobs"]["disabled"]["if"]
+
+
+def test_ci_deploy_has_immutable_actions_and_exact_commit():
+    deploy = workflow("ci.yml")["jobs"]["deploy"]
+    assert deploy["concurrency"] == {"group": "deploy-group", "cancel-in-progress": "false"}
+    assert deploy["steps"][0]["with"]["ref"] == "${{ github.sha }}"
+    for step in deploy["steps"]:
         if "uses" in step:
             assert re.fullmatch(r"[^@]+@[0-9a-f]{40}", step["uses"])
 
