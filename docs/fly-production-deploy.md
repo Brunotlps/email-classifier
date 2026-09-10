@@ -1,11 +1,12 @@
 # Fly production delivery (#26)
 
 The `CI` workflow is the only automatic entry point. On PRs it runs quality
-checks only. On pushes to `main`, the reusable `fly-deploy.yml` is called with
-`needs: [ci-gate]`. The normal GitHub success condition prevents the call when
+checks only. On pushes to `main`, the direct `deploy` job in `ci.yml` has
+`needs: [ci-gate]`. The normal GitHub success condition prevents the job when
 the gate fails, is skipped, or is cancelled. Both caller and callee require a
-`push` event on `refs/heads/main`. The reusable workflow has no independent push,
-PR, or manual trigger and no user-supplied revision input.
+`push` event on `refs/heads/main`. The old `fly-deploy.yml` is a disabled operator
+pointer and cannot deploy; there is no independent deploy trigger or user-supplied
+revision input.
 
 Checkout explicitly selects `github.sha` and the shell verifies HEAD equals
 `GITHUB_SHA`: tests and deployment refer to the same main commit. The image is
@@ -17,8 +18,9 @@ release selection and rollback.
 All actions are pinned to full commit SHAs; flyctl is pinned to `0.4.101` rather
 than implicitly downloading latest. Permissions are `contents: read`. Checkout
 does not persist credentials. The Fly token is available only to the deploy step
-in the `Production` job, never to tests, checkout or public smoke. The caller does
-not use `secrets: inherit`; Production supplies the environment secret.
+in the direct `Production` job, never to tests, checkout or public smoke. This
+placement is deliberate: the first merge attempt showed an environment secret
+was empty inside a called reusable workflow, so no Fly API call was made with it.
 
 ## Concurrency and failure
 
@@ -139,6 +141,12 @@ for HTTP 200 with an error body. Docker build and isolated `/health` smoke passe
   deploy stayed skipped. The synthetic test was then removed; no application
   test was disabled. This is a PR-side exclusion check; main's gate dependency
   is also checked structurally and must be confirmed in the authorized main run.
+
+The first authorized main run reached the deploy job after ci-gate passed, but
+failed immediately because the environment secret was empty inside the reusable
+workflow. No Fly API call or production change occurred. The implementation now
+places deployment directly in `ci.yml` so the environment secret is resolved by
+the same job that requests approval.
 
 Remote acceptance requires a green PR with deploy skipped, a controlled failing
 CI with deploy skipped, approved Production settings/credentials, and an
