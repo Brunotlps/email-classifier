@@ -62,6 +62,19 @@ Depois da primeira execução do CodeQL e da habilitação dos alertas, revise o
 achados e converta problemas relevantes em issues separadas; não altere todas
 as dependências no mesmo PR.
 
+### Registro inicial — 2026-09-10
+
+Com aprovação do owner, Dependency graph, Dependabot alerts e Dependabot
+security updates foram habilitados. A primeira execução do CodeQL para Python e
+JavaScript/TypeScript não encontrou alertas abertos. A primeira triagem do
+Dependabot encontrou 11 alertas: oito para `python-multipart`, um para
+`python-dotenv`, um para `pytest` e um para `PyPDF2`. Eles foram separados em
+[#40](https://github.com/Brunotlps/email-classifier/issues/40),
+[#37](https://github.com/Brunotlps/email-classifier/issues/37),
+[#39](https://github.com/Brunotlps/email-classifier/issues/39) e
+[#38](https://github.com/Brunotlps/email-classifier/issues/38), respectivamente.
+Nenhuma dependência foi atualizada como parte da infraestrutura de segurança.
+
 Referências: [Dependabot](https://docs.github.com/en/code-security/tutorials/secure-your-dependencies/dependabot-quickstart),
 [dependency review](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-review),
 [CodeQL](https://docs.github.com/en/code-security/concepts/code-scanning/codeql/codeql-code-scanning).
