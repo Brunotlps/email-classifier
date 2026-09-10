@@ -9,7 +9,7 @@ produce a failing gate (an entirely cancelled run must never satisfy protection)
 The workflow has `contents: read`, disables persisted checkout credentials, uses
 full commit SHAs with release comments, and never references production secrets.
 The aggregator needs no token permissions. Concurrency cancels obsolete runs for
-the same workflow/ref. Timeouts are 10 minutes for Python, 5 for the extension,
+the same workflow/ref on PRs; main runs are serialized without interrupting deployments. Timeouts are 10 minutes for Python, 5 for the extension,
 15 for the container, and 2 for the aggregator. Expected PR duration is under
 10 minutes; runner queues and cold dependency/image downloads can vary.
 
@@ -119,10 +119,11 @@ and disallow force pushes and deletion. A required review count of zero permits
 the solo maintainer to integrate an agent-authored PR while still requiring a PR.
 Do not claim this protection is active until the remote API verifies it.
 
-Use `Refs #25` while remote acceptance remains pending; change to `Closes #25`
-once all criteria are met. Merge needs separate explicit approval. The existing
-Fly workflow still deploys automatically on pushes to `main`, independently of CI;
-merge approval must account for that production deployment. #26 will gate deploys.
+Issue #25 was integrated through PR #29 with owner-approved branch protection.
+Merge still needs explicit approval. The independent Fly deployment present at
+the #25 baseline is superseded by #26's
+[gated Fly workflow](fly-production-deploy.md), which runs after `ci-gate` for
+the same main commit and uses Production's deployment approval.
 
 The Docker base tag and transitive Python dependencies remain mutable; this work
 makes test execution independent of live AI, not a fully reproducible dependency
