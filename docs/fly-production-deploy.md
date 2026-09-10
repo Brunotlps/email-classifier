@@ -87,9 +87,12 @@ separate explicit authorization within the agreed scope.
 
 The local audit record for the 2026-06-10 incident (not tracked in Git) reported
 that an app-scoped token failed at the classic remote builder and an org-scoped
-token worked. That historical observation does not prove the restriction still
-exists with flyctl 0.4.101. Official Fly guidance favors app-scoped deploy tokens;
-the minimum currently functional scope must be tested, not assumed.
+token worked. The authorized 2026-09-10 production run reproduced that behavior
+with flyctl 0.4.101: the app-scoped token passed config validation but failed with
+`Failed to start remote builder heartbeat: unauthorized`. An org-scoped token
+with the same finite lifetime then completed the remote build and deployment.
+Official Fly guidance favors app-scoped deploy tokens; this project records the
+org-scoped token as a necessary exception for the retained remote-builder path.
 
 Keep `--remote-only --depot=false`: the historical remote builder authorization
 issue and Depot/PyPI connectivity failures are documented in the incident and
@@ -106,14 +109,13 @@ flyctl tokens create deploy --app email-classifier-api \
   | gh secret set FLY_API_TOKEN --env Production
 ```
 
-The first authorized main deployment tests both remote build access and health.
-If it fails on builder authorization, preserve the logs and obtain approval
-before replacing it with an org-scoped token. Do not silently widen privileges.
-Record the tested CLI version, failure stage, exact organization, token ID/name,
-expiry and successful replacement run as an exception in the PR/runbook (never
-the token value). The exception must explain that other apps in that org are
-reachable and assign owner Bruno Teixeira Lopes to reassess it on rotation or a
-builder/CLI change. Until that trial, scope validation remains pending.
+The authorized trial used the `personal` organization, token name
+`briskmail-production-ci`, and expiry `2026-12-08T20:18:33Z`. The replacement
+run was [34475535289](https://github.com/Brunotlps/email-classifier/actions/runs/34475535289)
+for SHA `a5de11c48ab81e0c34e1cddacda7c8f2dbf09a15`; it passed the remote build,
+Fly service checks, and public `/health` smoke test. The exception must be
+reassessed by Bruno Teixeira Lopes at rotation time or after a builder/CLI
+change. Never record the token value.
 
 Rotate before expiry (review by day 60): inventory token IDs, create replacement
 with the narrowest verified scope, update the Production secret via stdin,
@@ -152,7 +154,8 @@ Remote acceptance requires a green PR with deploy skipped, a controlled failing
 CI with deploy skipped, approved Production settings/credentials, and an
 authorized main run proving gate-before-deploy for the same SHA, healthy Fly
 service checks and successful public smoke. Keep `Refs #26` while any remain
-unverified; do not close the issue based solely on a green PR.
+unverified; all remote acceptance items are now evidenced by the merged PRs and
+run `34475535289`.
 
 Sources: [GitHub reusable workflows](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows),
 [Fly access tokens](https://fly.io/docs/security/tokens/),
