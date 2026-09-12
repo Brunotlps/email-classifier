@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import pytest
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
@@ -159,6 +161,115 @@ class TestClassifyFileEndpoint:
 
         assert response.status_code == 400
         assert "vazio" in response.json()["detail"].lower()
+
+    @pytest.mark.parametrize("filename,extended_filename,expected_status", [
+        ("email.exe", "email.txt", 400),
+        ("email.txt", "email.exe", 200),
+    ])
+    def test_upload_uses_plain_filename_when_extended_parameter_conflicts(
+        self, filename, extended_filename, expected_status
+    ):
+        # GHSA-vffw-93wf-4j4q: filename* não pode trocar a extensão validada.
+        content = b"Please schedule our project meeting for next week."
+        body = (
+            b"--upload-boundary\r\n"
+            + f'Content-Disposition: form-data; name="file"; filename="{filename}"; '
+              f"filename*=UTF-8''{extended_filename}\r\n".encode()
+            + b"Content-Type: text/plain\r\n\r\n" + content
+            + b"\r\n--upload-boundary--\r\n"
+        )
+        with patch.object(routes.analyzer, "analyze", new_callable=AsyncMock) as mock:
+            mock.return_value = _VALID_ANALYSIS
+            response = client.post(
+                "/api/v1/classify-file", content=body,
+                headers={"Content-Type": "multipart/form-data; boundary=upload-boundary"},
+            )
+
+        assert response.status_code == expected_status
+        if expected_status == 200:
+            mock.assert_awaited_once_with(content.decode())
+        else:
+            mock.assert_not_awaited()
+
+    @pytest.mark.parametrize("boundary,extra_headers", [
+        ("upload-boundary", b"X-Extra: value\r\n" * 10),
+        ("upload-boundary", b"X-Extra: " + b"a" * 5000 + b"\r\n"),
+        ("b" * 257, b""),
+    ], ids=["too-many-headers", "oversized-header", "oversized-boundary"])
+    def test_upload_rejects_excessive_multipart_metadata(self, boundary, extra_headers):
+        # Entradas limitadas: reproduzem a ausência de limites sem um teste de carga.
+        body = (
+            f"--{boundary}\r\n".encode()
+            + b'Content-Disposition: form-data; name="file"; filename="email.txt"\r\n'
+            + extra_headers + b"\r\nPlease review this project email.\r\n"
+            + f"--{boundary}--\r\n".encode()
+        )
+        with patch.object(routes.analyzer, "analyze", new_callable=AsyncMock) as mock:
+            mock.return_value = _VALID_ANALYSIS
+            response = client.post(
+                "/api/v1/classify-file", content=body,
+                headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+            )
+
+        assert response.status_code == 400
+        mock.assert_not_awaited()
+
+    def test_upload_without_multipart_boundary_is_rejected(self):
+        with patch.object(routes.analyzer, "analyze", new_callable=AsyncMock) as mock:
+            response = client.post(
+                "/api/v1/classify-file", content=b"invalid multipart body",
+                headers={"Content-Type": "multipart/form-data"},
+            )
+        assert response.status_code == 400
+        mock.assert_not_awaited()
+
+    def test_classify_file_with_eml_preserves_extracted_content(self):
+        content = (
+            b"From: sender@example.com\r\nSubject: Meeting\r\n"
+            b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
+            b"Please schedule our meeting."
+        )
+        with patch.object(routes.analyzer, "analyze", new_callable=AsyncMock) as mock:
+            mock.return_value = _VALID_ANALYSIS
+            response = client.post(
+                "/api/v1/classify-file",
+                files={"file": ("email.eml", content, "message/rfc822")},
+            )
+        assert response.status_code == 200
+        mock.assert_awaited_once_with(
+            "De: sender@example.com\nAssunto: Meeting\n\nPlease schedule our meeting."
+        )
+
+    def test_classify_file_with_pdf_preserves_extracted_content(self):
+        from PyPDF2 import PdfWriter
+        from PyPDF2.generic import DecodedStreamObject, DictionaryObject, NameObject
+
+        # PDF real e pequeno em memória; somente a chamada de IA é simulada.
+        writer = PdfWriter()
+        writer.add_blank_page(width=300, height=300)
+        page = writer.pages[0]
+        font = DictionaryObject({
+            NameObject("/Type"): NameObject("/Font"),
+            NameObject("/Subtype"): NameObject("/Type1"),
+            NameObject("/BaseFont"): NameObject("/Helvetica"),
+        })
+        page[NameObject("/Resources")] = DictionaryObject({
+            NameObject("/Font"): DictionaryObject({NameObject("/F1"): font}),
+        })
+        stream = DecodedStreamObject()
+        stream.set_data(b"BT /F1 12 Tf 20 200 Td (Please schedule our meeting.) Tj ET")
+        page[NameObject("/Contents")] = stream
+        pdf = BytesIO()
+        writer.write(pdf)
+
+        with patch.object(routes.analyzer, "analyze", new_callable=AsyncMock) as mock:
+            mock.return_value = _VALID_ANALYSIS
+            response = client.post(
+                "/api/v1/classify-file",
+                files={"file": ("email.pdf", pdf.getvalue(), "application/pdf")},
+            )
+        assert response.status_code == 200, response.text
+        mock.assert_awaited_once_with("Please schedule our meeting.")
 
     def test_classify_file_with_large_file_fails(self, sample_large_file):
         with open(sample_large_file, 'rb') as f:
