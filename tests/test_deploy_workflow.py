@@ -26,6 +26,18 @@ def test_deploy_requires_gate_in_the_same_run_and_main_push():
     assert ci["concurrency"]["cancel-in-progress"] == "${{ github.event_name == 'pull_request' }}"
 
 
+def test_main_pushes_use_independent_ci_concurrency_groups():
+    ci = workflow("ci.yml")
+
+    assert ci["concurrency"]["group"] == (
+        "ci-${{ github.workflow }}-"
+        "${{ github.event_name == 'pull_request' && github.ref || github.run_id }}"
+    )
+    assert ci["concurrency"]["cancel-in-progress"] == (
+        "${{ github.event_name == 'pull_request' }}"
+    )
+
+
 def test_legacy_deploy_pointer_cannot_deploy():
     deploy_workflow = workflow("fly-deploy.yml")
     assert set(deploy_workflow["on"]) == {"workflow_dispatch"}

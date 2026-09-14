@@ -120,11 +120,12 @@ was empty inside a called reusable workflow, so no Fly API call was made with it
 
 ## Concurrency and failure
 
-PR runs cancel obsolete runs. Main runs do not cancel an in-progress deployment.
-The CI concurrency group serializes main runs and the deploy job retains the
-existing `deploy-group` with cancellation disabled. GitHub may replace queued
-runs with a newer pending run; this does not bypass any checks or cancel a
-running deploy. This is not a FIFO queue of every commit.
+PR runs cancel obsolete runs. Main quality runs use unique run-specific
+concurrency groups, so a stale pending quality run cannot block a later main
+push. Main runs do not cancel an in-progress deployment; the deploy job retains
+the separate `deploy-group` with cancellation disabled. GitHub may replace
+queued runs with a newer pending run; this does not bypass any checks or cancel
+a running deploy. This is not a FIFO queue of every commit.
 
 Deploy has a 20-minute timeout; public smoke has a 2-minute step timeout. If the
 smoke fails, deployment is marked failed, but the release may already be live.
