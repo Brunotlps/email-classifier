@@ -207,7 +207,7 @@ Ollama (dev) / OpenAI (prod)
 ```
 
 ### AI provider switching
-`get_ai_client()` in `ai_client.py` returns `OllamaClient` or `OpenAIClient` based on `settings.ai_provider` (`AI_PROVIDER` env var). Both implement the `AIClient` ABC with a single `async generate(prompt, system_prompt) -> str` method. Switching providers requires only an env var change — no code changes.
+`get_ai_client()` in `ai_client.py` returns `OllamaClient` or `OpenAIClient` based on `settings.ai_provider` (`AI_PROVIDER` env var). Both implement the `AIClient` ABC with a shared `async generate(prompt, system_prompt, response_schema=None) -> str` method. The active analysis flow passes the same JSON schema to both providers, while callers such as `/test-ai` may omit it. Switching providers requires only an env var change — no code changes.
 
 ### Caching and retry
 `EmailAnalyzer` uses `TTLCache(maxsize=100, ttl=3600)` keyed by `SHA-256(language + email_content)`. Cache hits return immediately without any AI call. The AI call itself is decorated with `@retry(stop_after_attempt(3), wait_exponential(multiplier=1, min=1, max=10))` from tenacity.
@@ -216,7 +216,7 @@ Ollama (dev) / OpenAI (prod)
 `EmailAnalyzer` returns contextual suggestions in the same AI response as summary, category, priority, and action status. `routes.py` converts valid suggestion items into the shared `ResponseSuggestion` schema for both active analysis endpoints.
 
 ### Prompt engineering pattern
-`EmailAnalyzer` combines a strict JSON-only system prompt with a language instruction and an email body wrapped in `---` delimiters. `_parse()` uses `re.search(r'\{.*\}', text, re.DOTALL)` to isolate JSON before validating required fields and allowed values.
+`EmailAnalyzer` combines a strict JSON-only system prompt with a language instruction and an email body wrapped in `---` delimiters. The active analysis flow requests the shared JSON schema from the provider and parses only the complete JSON response; text wrappers are rejected instead of extracted with a greedy regular expression.
 
 ### Docker networking for Ollama
 The `docker-compose.yml` hardcodes `OLLAMA_BASE_URL=http://172.21.0.1:11434` (the Docker bridge gateway IP) because `localhost` inside the container refers to the container itself, not the host. `config.py` has `_adjust_ollama_url()` that auto-swaps `localhost` ↔ `host.docker.internal`, but this is overridden by the hardcoded IP in compose. **If the Docker bridge gateway IP changes on a new machine, update `OLLAMA_BASE_URL` in `docker-compose.yml`.**

@@ -2,7 +2,7 @@
 Cliente unificado para trabalhar com diferentes provedores de IA
 Suporta: OpenAI e Ollama
 """
-import httpx, json, structlog
+import httpx, structlog
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any
@@ -17,7 +17,12 @@ class AIClient(ABC):
     """Classe abstrata para clientes de IA"""
     
     @abstractmethod
-    async def generate(self, prompt: str, system_prompt: str = "") -> str:
+    async def generate(
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        response_schema: Dict[str, Any] | None = None,
+    ) -> str:
         """Gera resposta a partir de um prompt"""
         pass
 
@@ -43,7 +48,12 @@ class OllamaClient(AIClient):
                     base_url=self.base_url,
                     model=self.model)
     
-    async def generate(self, prompt: str, system_prompt: str = "") -> str:
+    async def generate(
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        response_schema: Dict[str, Any] | None = None,
+    ) -> str:
         """
         Gera resposta usando Ollama
         
@@ -66,6 +76,8 @@ class OllamaClient(AIClient):
                 "num_predict": settings.max_tokens
             }
         }
+        if response_schema is not None:
+            payload["format"] = response_schema
         
         try:
             response = await self.client.post(url, json=payload)
@@ -111,7 +123,12 @@ class OpenAIClient(AIClient):
         logger.info("openai_api_key_validated")
 
 
-    async def generate(self, prompt: str, system_prompt: str = "") -> str:
+    async def generate(
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        response_schema: Dict[str, Any] | None = None,
+    ) -> str:
         """
         Gera resposta usando OpenAI
         
@@ -123,15 +140,26 @@ class OpenAIClient(AIClient):
             Resposta do modelo
         """
         try:
-            response = await self.client.chat.completions.create(
-                model=settings.openai_model,
-                messages=[
+            request = {
+                "model": settings.openai_model,
+                "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=settings.max_tokens,
-                temperature=settings.temperature
-            )
+                "max_tokens": settings.max_tokens,
+                "temperature": settings.temperature,
+            }
+            if response_schema is not None:
+                request["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "email_analysis",
+                        "strict": True,
+                        "schema": response_schema,
+                    },
+                }
+
+            response = await self.client.chat.completions.create(**request)
             return response.choices[0].message.content
         
         except RateLimitError as e:

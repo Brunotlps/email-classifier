@@ -1,5 +1,4 @@
 import json
-import re
 import hashlib
 import structlog
 
@@ -9,7 +8,7 @@ from typing import Dict, Any
 
 from app.utils.ai_client import get_ai_client
 from app.utils.ai_response import raise_invalid_ai_response
-from app.models.schemas import CATEGORIES_LIST
+from app.models.schemas import CATEGORIES_LIST, EMAIL_ANALYSIS_JSON_SCHEMA
 from app.config import settings
 
 
@@ -131,7 +130,11 @@ class EmailAnalyzer:
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10), reraise=True)
     async def _call_ai(self, user_prompt: str) -> str:
-        return await self.ai_client.generate(user_prompt, _SYSTEM_PROMPT)
+        return await self.ai_client.generate(
+            user_prompt,
+            _SYSTEM_PROMPT,
+            EMAIL_ANALYSIS_JSON_SCHEMA,
+        )
 
     async def analyze(self, email_content: str, language: str = "pt") -> Dict[str, Any]:
         cache_key = hashlib.sha256(f"{language}:{email_content}".encode()).hexdigest()
@@ -158,11 +161,8 @@ class EmailAnalyzer:
                 cause=TypeError("AI response must be a string"),
             )
 
-        match = re.search(r'\{.*\}', response, re.DOTALL)
-        text = match.group(0) if match else response.strip()
-
         try:
-            data = json.loads(text)
+            data = json.loads(response.strip())
         except json.JSONDecodeError as e:
             raise_invalid_ai_response(
                 service="analyzer",
@@ -172,6 +172,8 @@ class EmailAnalyzer:
             )
 
         try:
+            if not isinstance(data, dict):
+                raise TypeError("AI response must be a JSON object")
             self._validate(data)
         except (TypeError, ValueError) as e:
             raise_invalid_ai_response(

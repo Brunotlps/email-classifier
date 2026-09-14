@@ -39,6 +39,31 @@ CATEGORIES_LIST = [
     "Outro",
 ]
 
+EMAIL_ANALYSIS_JSON_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "summary": {"type": "string"},
+        "category": {"type": "string", "enum": CATEGORIES_LIST},
+        "priority": {"type": "string", "enum": ["alta", "normal", "baixa"]},
+        "action_required": {"type": "boolean"},
+        "suggestions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "title": {"type": "string"},
+                    "content": {"type": "string"},
+                    "tone": {"type": "string", "enum": ["formal", "cordial", "casual", "técnico"]},
+                },
+                "required": ["title", "content", "tone"],
+            },
+        },
+    },
+    "required": ["summary", "category", "priority", "action_required", "suggestions"],
+}
+
 
 class EmailAnalyzeRequest(BaseModel):
     """Request para análise completa de email"""
