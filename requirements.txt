@@ -18,7 +18,7 @@ pypdf==6.18.1 # Para processar PDFs
 
 # Rate limiting & Logging
 slowapi==0.1.9
-structlog==24.1.0
+structlog==26.1.0
 
 # Fluxo de Cache e Retry
 cachetools==5.3.2
