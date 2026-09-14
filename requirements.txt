@@ -22,7 +22,7 @@ structlog==26.1.0
 
 # Fluxo de Cache e Retry
 cachetools==5.3.2
-tenacity==8.2.3
+tenacity==9.1.4
 
 # Testes
 pytest==9.0.3
