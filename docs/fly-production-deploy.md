@@ -1,4 +1,4 @@
-# Fly production delivery (#26)
+# Fly production delivery (#26, #28)
 
 The `CI` workflow is the only automatic entry point. On PRs it runs quality
 checks only. On pushes to `main`, the direct `deploy` job in `ci.yml` has
@@ -11,9 +11,105 @@ revision input.
 Checkout explicitly selects `github.sha` and the shell verifies HEAD equals
 `GITHUB_SHA`: tests and deployment refer to the same main commit. The image is
 tagged with the commit SHA and receives the OCI revision label. A successful
-deployment summary records the SHA, image tag and public smoke result. An image
-tag identifies the build but is not an immutable digest; #28 covers immutable
-release selection and rollback.
+deployment summary records the SHA, image tag and public smoke result. #28 adds
+validated selection and redeployment of a previously successful SHA-tagged
+release without rebuilding source.
+
+## Rollback runbook (#28)
+
+Fly rollback means redeploying an image from a previously successful release. The
+rollback target is selected by its lowercase 40-character commit SHA, which is
+the tag written by the production deploy job. The workflow accepts no branch,
+`latest`, or free-form image value. It derives
+`registry.fly.io/email-classifier-api:$SHA`, requires the exact confirmation
+choice, runs only when dispatched from `main`, and requests the `Production`
+environment. The environment approval remains the final remote authorization.
+
+The rollback executor is the maintainer who dispatches **Fly Rollback** and
+approves `Production`. The validator is the same maintainer during the incident,
+using the release list and health checks below; a second maintainer can perform
+the validation when available. The workflow has `contents: read`, exposes the
+Fly token only to the deploy step, and never changes Fly secrets or application
+configuration through a separate command.
+
+1. Record the incident time, observed signal, current release, and the last
+   known-good release. Inspect the current app without changing it:
+
+   ```bash
+   fly status --app email-classifier-api
+   fly releases --app email-classifier-api --image
+   ```
+
+2. Select a previously successful commit SHA from the release list. Confirm that
+   its image is still present and that the current Fly secrets and configuration
+   do not need a separate, explicitly reviewed change. Fly rollback changes the
+   VM image; it does not restore old secrets, `fly.toml` values, or database
+   state.
+
+3. In GitHub Actions, choose **Fly Rollback**, select `main`, enter the selected
+   SHA in `commit_sha`, and choose
+   `I_UNDERSTAND_PRODUCTION_ROLLBACK`. Approve the `Production` environment only
+   after checking those values. The workflow runs:
+
+   ```bash
+   flyctl deploy --app email-classifier-api \
+     --image registry.fly.io/email-classifier-api:$SHA \
+     --strategy rolling
+   ```
+
+   This reuses the existing image and does not build source. The normal source
+   deploy in `ci.yml` keeps `--remote-only --depot=false`; those flags are not
+   removed or changed by the image-only rollback path.
+
+4. Verify the Fly release and service checks, then run the public probe:
+
+   ```bash
+   fly status --app email-classifier-api
+   python3 scripts/ci/public_health.py \
+     https://email-classifier-api.fly.dev/health
+   ```
+
+5. Observe production for 15 minutes after the rollback. The release is
+   considered stable when Fly checks remain healthy, `/health` continues to
+   return the expected JSON, and logs, restarts, error rate, and request
+   latency return to the normal baseline. The executor records the target and
+   timestamps in the incident/PR. A single signal does not trigger an
+   automatic rollback; the maintainer decides whether to hold, roll forward,
+   or repeat the runbook.
+
+The rollback procedure is rehearsed locally and without credentials by testing
+the reference validator:
+
+```bash
+python3 scripts/ci/rollback_image.py \
+  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+```
+
+It prints the exact registry reference. Mutable values such as `latest`, branch
+names, uppercase strings, and malformed SHAs fail before any Fly command. This
+rehearsal does not call Fly or alter production.
+
+## Delivery strategy and deferred scope
+
+The project uses a direct deploy to production with three controls: the parallel
+Python, extension, and container checks; the `ci-gate` job requiring all three
+to succeed on the same commit; and manual `Production` approval. A separate
+staging app or canary is deferred because this repository has one Fly app, no
+staging configuration or secret set, and no traffic split mechanism. The
+15-minute observation window above is the progressive control that fits the
+current topology without inventing a second environment. No automatic rollback
+is tied to one health signal.
+
+There are no path filters today. This preserves `ci-gate` as the required
+fallback for documentation, backend, extension, and container changes while a
+baseline is collected. A future filter change must measure current job coverage
+first, keep a safe fallback, and update the gate tests in a separate linked
+follow-up; it is outside this rollback change.
+
+Vercel previews remain enabled for the frontend integration. This PR does not
+change preview creation or introduce a repository-side Vercel workflow. Any
+reduction should follow a measured baseline and a separate linked follow-up so
+frontend validation is not silently removed.
 
 All actions are pinned to full commit SHAs; flyctl is pinned to `0.4.101` rather
 than implicitly downloading latest. Permissions are `contents: read`. Checkout
