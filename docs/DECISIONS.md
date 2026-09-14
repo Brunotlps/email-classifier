@@ -67,3 +67,18 @@ running production rollout; PR runs retain cancellation. `Production` holds the
 deployment approval and environment token. This makes the dependency explicit
 without a second CI run or polling the checks API. See `fly-production-deploy.md`
 for activation, credential scope validation and operational limits.
+
+## 9. Active analysis uses provider-native structured output (#15)
+
+The active `EmailAnalyzer` flow sends one canonical JSON schema to both
+providers: Ollama receives it through `format`, and OpenAI receives it through
+strict `response_format.json_schema`. The analyzer accepts only the returned
+JSON object and no longer extracts a substring from markdown or surrounding
+text.
+
+**Why**: provider-native schema enforcement addresses the protocol boundary
+where malformed or mixed prose/JSON responses were previously handled by a
+greedy regular expression. The schema covers the existing `/api/v1/analyze`
+and `/api/v1/classify-file` response contract; it does not restore the removed
+`/api/v1/classify` flow. Callers that need plain text, such as `/test-ai`, may
+omit the optional schema argument.

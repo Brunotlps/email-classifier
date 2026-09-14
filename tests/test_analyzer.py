@@ -2,6 +2,7 @@ import pytest
 import json
 from unittest.mock import AsyncMock, patch
 from app.exceptions import InvalidAIResponseError
+from app.models.schemas import EMAIL_ANALYSIS_JSON_SCHEMA
 from app.services.analyzer import EmailAnalyzer
 
 
@@ -30,6 +31,7 @@ class TestEmailAnalyzer:
             mock.return_value = _VALID_RESPONSE
             result = await analyzer.analyze(sample_produtivo_email)
 
+        assert mock.await_args.args[2] == EMAIL_ANALYSIS_JSON_SCHEMA
         assert result["summary"] == "Carlos is requesting a meeting to discuss contract renewal."
         assert result["category"] == "Reunião / Agenda"
         assert result["priority"] == "normal"
@@ -133,13 +135,14 @@ class TestEmailAnalyzer:
         assert result["action_required"] is True
 
     @pytest.mark.asyncio
-    async def test_analyze_extracts_json_from_surrounding_text(self, analyzer, sample_produtivo_email):
+    async def test_analyze_rejects_json_with_surrounding_text(self, analyzer, sample_produtivo_email):
         wrapped = f"Here is my analysis:\n{_VALID_RESPONSE}\nThat's all."
         with patch.object(analyzer.ai_client, 'generate', new_callable=AsyncMock) as mock:
             mock.return_value = wrapped
-            result = await analyzer.analyze(sample_produtivo_email)
+            with pytest.raises(InvalidAIResponseError, match="resposta inválida"):
+                await analyzer.analyze(sample_produtivo_email)
 
-        assert result["category"] == "Reunião / Agenda"
+        mock.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_analyze_cache_hit_skips_second_ai_call(self, analyzer, sample_produtivo_email):
