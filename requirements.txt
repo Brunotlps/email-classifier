@@ -14,7 +14,7 @@ python-multipart==0.0.31 # Pra aceitar upload de arquivos
 
 fastapi-cors==0.0.6
 
-pypdf2==3.0.1 # Para processar PDFs
+pypdf==6.18.1 # Para processar PDFs
 
 # Rate limiting & Logging
 slowapi==0.1.9

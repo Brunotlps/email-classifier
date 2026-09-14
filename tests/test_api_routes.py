@@ -241,8 +241,8 @@ class TestClassifyFileEndpoint:
         )
 
     def test_classify_file_with_pdf_preserves_extracted_content(self):
-        from PyPDF2 import PdfWriter
-        from PyPDF2.generic import DecodedStreamObject, DictionaryObject, NameObject
+        from pypdf import PdfWriter
+        from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
         # PDF real e pequeno em memória; somente a chamada de IA é simulada.
         writer = PdfWriter()
