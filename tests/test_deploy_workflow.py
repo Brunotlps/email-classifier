@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 import tomllib
 
+import pytest
 import yaml
 
 
@@ -48,3 +49,64 @@ def test_fly_service_checks_health_without_ai():
         "method": "GET", "path": "/health", "interval": "15s",
         "timeout": "5s", "grace_period": "10s",
     }
+
+
+def test_manual_rollback_is_protected_and_uses_an_immutable_image():
+    rollback = workflow("fly-rollback.yml")
+    inputs = rollback["on"]["workflow_dispatch"]["inputs"]
+    job = rollback["jobs"]["rollback"]
+
+    assert rollback["permissions"] == {"contents": "read"}
+    assert inputs["commit_sha"]["required"] == "true"
+    assert inputs["confirmation"]["required"] == "true"
+    assert inputs["confirmation"]["type"] == "choice"
+    assert job["environment"]["name"] == "Production"
+    assert job["permissions"] == {"contents": "read"}
+    assert job["concurrency"] == {"group": "production-deploy", "cancel-in-progress": "false"}
+    assert all(
+        re.fullmatch(r"[^@]+@[0-9a-f]{40}", step["uses"])
+        for step in job["steps"]
+        if "uses" in step
+    )
+
+    runs = [step["run"] for step in job["steps"] if "run" in step]
+    assert any("scripts/ci/rollback_image.py" in command for command in runs)
+    assert any("flyctl releases --app email-classifier-api --image" in command for command in runs)
+    assert any(
+        'flyctl deploy --app email-classifier-api --image "$ROLLBACK_IMAGE"' in command
+        for command in runs
+    )
+    assert all("${{ inputs." not in command for command in runs)
+    deploy_step = next(step for step in job["steps"] if step.get("name") == "Deploy the selected existing image")
+    assert deploy_step["env"] == {
+        "FLY_API_TOKEN": "${{ secrets.FLY_API_TOKEN }}",
+        "ROLLBACK_IMAGE": "${{ steps.target.outputs.image }}",
+    }
+
+
+def test_rollback_reference_validation_rejects_mutable_or_malformed_input():
+    from scripts.ci.rollback_image import image_for_sha
+
+    commit_sha = "a" * 40
+    assert image_for_sha(commit_sha) == f"registry.fly.io/email-classifier-api:{commit_sha}"
+
+    for invalid in ("latest", "main", "a" * 39, "a" * 40 + "x", "A" * 40):
+        with pytest.raises(ValueError):
+            image_for_sha(invalid)
+
+
+def test_issue_28_delivery_policy_is_documented():
+    document = (ROOT / "docs/fly-production-deploy.md").read_text().lower()
+
+    for criterion in (
+        "rollback runbook",
+        "15-minute observation window",
+        "direct deploy",
+        "staging",
+        "canary",
+        "ci-gate",
+        "path filters",
+        "vercel preview",
+        "rollback executor",
+    ):
+        assert criterion in document

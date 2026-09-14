@@ -1,0 +1,82 @@
+name: Fly Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Lowercase commit SHA of a previously successful production release.
+        required: true
+        type: string
+      confirmation:
+        description: Confirm that the selected image is the intended production rollback target.
+        required: true
+        type: choice
+        options:
+          - I_UNDERSTAND_PRODUCTION_ROLLBACK
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    environment:
+      name: Production
+      url: https://email-classifier-api.fly.dev
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Validate rollback target
+        id: target
+        env:
+          ROLLBACK_SHA: ${{ inputs.commit_sha }}
+          ROLLBACK_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          test "$ROLLBACK_CONFIRMATION" = "I_UNDERSTAND_PRODUCTION_ROLLBACK"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          image="$(python3 scripts/ci/rollback_image.py "$ROLLBACK_SHA")"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "Validated rollback image for commit $ROLLBACK_SHA"
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
+        with:
+          version: '0.4.101'
+      - name: Confirm the image exists in Fly release history
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          ROLLBACK_IMAGE: ${{ steps.target.outputs.image }}
+        run: |
+          test -n "$FLY_API_TOKEN"
+          flyctl releases --app email-classifier-api --image | grep -F -- "$ROLLBACK_IMAGE"
+      - name: Deploy the selected existing image
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          ROLLBACK_IMAGE: ${{ steps.target.outputs.image }}
+        run: |
+          test -n "$FLY_API_TOKEN"
+          flyctl deploy --app email-classifier-api --image "$ROLLBACK_IMAGE" --strategy rolling
+      - name: Check public health after rollback
+        timeout-minutes: 2
+        run: python3 scripts/ci/public_health.py https://email-classifier-api.fly.dev/health
+      - name: Record rollback target
+        env:
+          ROLLBACK_IMAGE: ${{ steps.target.outputs.image }}
+        run: |
+          {
+            echo '### Fly production rollback'
+            echo "Redeployed existing image: $ROLLBACK_IMAGE"
+            echo 'Public /health: HTTP 200 and healthy JSON'
+            echo 'Continue the 15-minute observation window from the rollback runbook.'
+          } >> "$GITHUB_STEP_SUMMARY"
