@@ -10,8 +10,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  # Cancel stale PR checks, but never interrupt a production deployment.
+  # PRs share a ref group; each main push gets its own quality run. Deploys
+  # remain serialized by the deploy job's separate deploy-group below.
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:

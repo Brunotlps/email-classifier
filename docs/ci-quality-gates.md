@@ -9,8 +9,11 @@ produce a failing gate (an entirely cancelled run must never satisfy protection)
 The workflow has `contents: read`, disables persisted checkout credentials, uses
 full commit SHAs with release comments, and never references production secrets.
 The aggregator needs no token permissions. Concurrency cancels obsolete runs for
-the same workflow/ref on PRs; main runs are serialized without interrupting deployments. Timeouts are 10 minutes for Python, 5 for the extension,
-15 for the container, and 2 for the aggregator. Expected PR duration is under
+the same workflow/ref on PRs. Main pushes use run-specific quality groups so a
+pending run cannot hold a later push; the deploy job keeps its separate group to
+serialize production deployments without interrupting one in progress. Timeouts
+are 10 minutes for Python, 5 for the extension, 15 for the container, and 2 for
+the aggregator. Expected PR duration is under
 10 minutes; runner queues and cold dependency/image downloads can vary.
 
 ## Local commands
