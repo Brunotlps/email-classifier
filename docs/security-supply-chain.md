@@ -75,6 +75,13 @@ Dependabot encontrou 11 alertas: oito para `python-multipart`, um para
 [#38](https://github.com/Brunotlps/email-classifier/issues/38), respectivamente.
 Nenhuma dependência foi atualizada como parte da infraestrutura de segurança.
 
+### Correção do alerta do PyPDF2 — issue #38
+
+O parser PDF foi migrado de `PyPDF2` para `pypdf==6.18.1`, com cobertura para
+extração de texto e para o erro de instalação ausente. Após a integração,
+confirme que o alerta Dependabot `GHSA-4vvm-4w3v-6mr8` foi encerrado; até essa
+confirmação, ele permanece aberto no GitHub.
+
 Referências: [Dependabot](https://docs.github.com/en/code-security/tutorials/secure-your-dependencies/dependabot-quickstart),
 [dependency review](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-review),
 [CodeQL](https://docs.github.com/en/code-security/concepts/code-scanning/codeql/codeql-code-scanning).

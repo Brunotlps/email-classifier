@@ -14,7 +14,7 @@ class FileParser:
     Suporta:
     - .txt (texto puro)
     - .eml (formato padrão de email)
-    - .pdf (opcional, se pypdf2 estiver instalado)
+    - .pdf (opcional, se pypdf estiver instalado)
     """
     
     SUPPORTED_EXTENSIONS = ['.txt', '.eml', '.pdf']
@@ -160,7 +160,7 @@ class FileParser:
         """
         Parse de arquivo PDF.
         
-        NOTA: Requer pypdf2 instalado.
+        NOTA: Requer pypdf instalado.
         
         Args:
                 content: Conteúdo binário do PDF
@@ -170,7 +170,7 @@ class FileParser:
         """
         
         try:
-            from PyPDF2 import PdfReader
+            from pypdf import PdfReader
             from io import BytesIO
             
             # Cria objeto arquivo em memória
@@ -194,7 +194,7 @@ class FileParser:
         except ImportError:
             raise ValueError(
                 "Suporte a PDF não instalado. "
-                "Execute: pip install pypdf2"
+                "Execute: pip install pypdf"
             )
         except Exception as e:
             raise ValueError(f"Erro ao processar PDF: {str(e)}")

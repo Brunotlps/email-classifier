@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import pytest
 from app.utils.file_parser import FileParser
 
@@ -106,17 +108,44 @@ Subject: No Body
 
 class TestFileParserPDF:
   """Testes específicos para arquivos .pdf"""
+
+  def test_parse_pdf_extracts_text_with_pypdf(self):
+    from pypdf import PdfWriter
+    from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=300, height=300)
+    page = writer.pages[0]
+    font = DictionaryObject({
+      NameObject("/Type"): NameObject("/Font"),
+      NameObject("/Subtype"): NameObject("/Type1"),
+      NameObject("/BaseFont"): NameObject("/Helvetica"),
+    })
+    page[NameObject("/Resources")] = DictionaryObject({
+      NameObject("/Font"): DictionaryObject({NameObject("/F1"): font}),
+    })
+    stream = DecodedStreamObject()
+    stream.set_data(b"BT /F1 12 Tf 20 200 Td (Please review this PDF.) Tj ET")
+    page[NameObject("/Contents")] = stream
+    pdf = BytesIO()
+    writer.write(pdf)
+
+    assert FileParser.parse("email.pdf", pdf.getvalue()) == "Please review this PDF."
   
-  def test_parse_pdf_without_pypdf2_raises_error(self, monkeypatch):
-    """Testa erro quando PyPDF2 não está instalado"""
+  def test_parse_pdf_without_pypdf_raises_error(self, monkeypatch):
+    """Testa erro quando pypdf não está instalado"""
     
-    # Simula ImportError do PyPDF2
-    def mock_import(*args, **kwargs):
-      raise ImportError("No module named 'PyPDF2'")
+    # Simula ImportError do pypdf.
+    original_import = __import__
+
+    def mock_import(name, *args, **kwargs):
+      if name == "pypdf":
+        raise ImportError("No module named 'pypdf'")
+      return original_import(name, *args, **kwargs)
     
     monkeypatch.setattr("builtins.__import__", mock_import)
     
     content = b"%PDF-1.4 fake pdf content"
     
-    with pytest.raises(ValueError, match="Suporte a PDF não instalado"):
+    with pytest.raises(ValueError, match=r"Execute: pip install pypdf$"):
       FileParser.parse("test.pdf", content)

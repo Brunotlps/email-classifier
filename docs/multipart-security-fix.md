@@ -35,8 +35,8 @@ coverage, not evidence of a newly fixed behavior.
 With only python-multipart changed to 0.0.31, the 14 upload tests and full
 78-test suite passed. `pip check` found no broken requirements. Warnings from
 legacy dependency/import APIs remain visible, including the `multipart`
-compatibility import used by the current framework and the existing PyPDF2
-dependency. Dependency or framework modernization is outside #40.
+compatibility import used by the current framework. PDF parser modernization
+is tracked separately in #38.
 
 Remote closure requires green PR checks and integration, followed by confirming
 the eight python-multipart alerts are fixed. A green PR or closed alert does not
