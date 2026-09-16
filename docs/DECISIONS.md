@@ -82,3 +82,18 @@ greedy regular expression. The schema covers the existing `/api/v1/analyze`
 and `/api/v1/classify-file` response contract; it does not restore the removed
 `/api/v1/classify` flow. Callers that need plain text, such as `/test-ai`, may
 omit the optional schema argument.
+
+## 10. Invalid structured responses use a bounded repair loop (#14)
+
+`EmailAnalyzer` makes up to `MAX_REPAIRS` additional AI calls when parsing or
+validation fails after the initial structured-output request. The follow-up
+prompt repeats the original request and includes only a safe structural
+diagnostic, such as a missing field or invalid JSON shape. Raw model output is
+excluded from the repair prompt and remains excluded from production exception
+messages and logs. The analyzer caches a result only after validation succeeds;
+when repairs are exhausted it preserves the existing sanitized
+`InvalidAIResponseError`, which the active routes expose as HTTP 502.
+
+The transport retry handled by tenacity remains separate from the logical
+repair loop. This keeps malformed successful provider responses recoverable
+without making the number of repair attempts unbounded.

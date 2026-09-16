@@ -41,7 +41,7 @@ Gmail (Chrome Extension)
     ↓ background.js sends HTTPS request
     ↓
 FastAPI backend (Fly.io)
-    ↓ EmailAnalyzer: cache → AI call → JSON parse
+    ↓ EmailAnalyzer: cache → AI call → bounded JSON repair → validation
     ↓
 OpenAI (production) / Ollama (local dev)
 ```
@@ -96,7 +96,7 @@ email-classifier/
 
 **Language-aware cache** — cache key is `SHA-256(language + email_content)`, so PT and EN analyses for the same email are cached independently.
 
-**Prompt engineering pattern** — `EmailAnalyzer` combines a strict JSON-only system prompt with a language instruction and delimited email body, then parses and validates the model response.
+**Prompt engineering pattern** — `EmailAnalyzer` combines a strict JSON-only system prompt with a language instruction and delimited email body, then parses and validates the model response. Invalid JSON or missing required fields receive a bounded repair attempt with structural feedback.
 
 **DOM-based Gmail integration** — the extension reads email content via `div.a3s.innerText` and uses `MutationObserver` to detect newly opened emails. No OAuth required for the MVP.
 

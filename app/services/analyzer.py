@@ -10,11 +10,13 @@ from app.utils.ai_client import get_ai_client
 from app.utils.ai_response import raise_invalid_ai_response
 from app.models.schemas import CATEGORIES_LIST, EMAIL_ANALYSIS_JSON_SCHEMA
 from app.config import settings
+from app.exceptions import InvalidAIResponseError
 
 
 logger = structlog.get_logger()
 
 _CATEGORIES_STR = '", "'.join(CATEGORIES_LIST)
+MAX_REPAIRS = 2
 
 # _SYSTEM_PROMPT = f"""You are an expert email assistant. You analyze emails written in Portuguese (PT-BR) or English and return structured insights in a single JSON response.
 
@@ -145,12 +147,33 @@ class EmailAnalyzer:
 
         lang_instruction = "Respond in Portuguese (PT-BR)." if language == "pt" else "Respond in English."
         user_prompt = f"{lang_instruction}\n\nAnalyze this email:\n\n---\n{email_content.strip()}\n---"
-        raw = await self._call_ai(user_prompt)
-        result = self._parse(raw)
+
+        prompt = user_prompt
+        for attempt in range(MAX_REPAIRS + 1):
+            raw = await self._call_ai(prompt)
+            try:
+                result = self._parse(raw)
+                break
+            except InvalidAIResponseError as error:
+                if attempt == MAX_REPAIRS:
+                    raise
+                prompt = self._build_repair_prompt(
+                    user_prompt,
+                    error.repair_feedback,
+                )
 
         self.cache[cache_key] = result
         logger.info("analyzer_cache_saved", key=cache_key[:8])
         return result
+
+    def _build_repair_prompt(self, original_prompt: str, feedback: str) -> str:
+        return (
+            f"{original_prompt}\n\n"
+            "Your previous response failed parsing or validation.\n"
+            f"Validation feedback: {feedback}\n"
+            "Return only one valid JSON object matching the required schema. "
+            "Do not include explanations or surrounding text."
+        )
 
     def _parse(self, response: str) -> Dict[str, Any]:
         if not isinstance(response, str):
