@@ -10,6 +10,25 @@ from app.exceptions import InvalidAIResponseError
 logger = structlog.get_logger()
 
 
+def _safe_repair_feedback(reason: str, cause: Exception) -> str:
+    """Retorna apenas diagnóstico estrutural seguro para um novo prompt."""
+    if reason == "invalid_type":
+        return "response must be a string containing one JSON object"
+
+    if reason == "invalid_json":
+        return "response must contain exactly one valid JSON object with no surrounding text"
+
+    if reason == "invalid_schema":
+        message = str(cause)
+        if message.startswith("Missing required field: "):
+            return message
+        if message == "AI response must be a JSON object":
+            return message
+        return "JSON object does not match the required response schema"
+
+    return "response failed parsing or validation"
+
+
 def raise_invalid_ai_response(
     *,
     service: str,
@@ -37,4 +56,6 @@ def raise_invalid_ai_response(
         log_context["response_preview"] = response_text.strip()[:200]
 
     logger.warning("ai_response_invalid", **log_context)
-    raise InvalidAIResponseError() from cause
+    raise InvalidAIResponseError(
+        repair_feedback=_safe_repair_feedback(reason, cause),
+    ) from cause

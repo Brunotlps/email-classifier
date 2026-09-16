@@ -3,7 +3,7 @@ import json
 from unittest.mock import AsyncMock, patch
 from app.exceptions import InvalidAIResponseError
 from app.models.schemas import EMAIL_ANALYSIS_JSON_SCHEMA
-from app.services.analyzer import EmailAnalyzer
+from app.services.analyzer import MAX_REPAIRS, EmailAnalyzer
 
 
 _VALID_RESPONSE = json.dumps({
@@ -47,6 +47,53 @@ class TestEmailAnalyzer:
                 await analyzer.analyze(sample_produtivo_email)
 
         assert raw_response not in str(exc_info.value)
+        assert mock.await_count == MAX_REPAIRS + 1
+
+    @pytest.mark.asyncio
+    async def test_analyze_repairs_invalid_json_with_a_bounded_second_call(self, analyzer, sample_produtivo_email):
+        with patch.object(analyzer.ai_client, 'generate', new_callable=AsyncMock) as mock:
+            mock.side_effect = ["This is not JSON at all", _VALID_RESPONSE]
+
+            result = await analyzer.analyze(sample_produtivo_email)
+
+        assert result["summary"] == "Carlos is requesting a meeting to discuss contract renewal."
+        assert mock.await_count == 2
+        repair_prompt = mock.await_args_list[1].args[0]
+        assert "valid JSON object" in repair_prompt
+        assert "This is not JSON at all" not in repair_prompt
+
+    @pytest.mark.asyncio
+    async def test_analyze_repairs_missing_field_with_safe_validation_feedback(self, analyzer, sample_produtivo_email):
+        incomplete = json.dumps({
+            "summary": "Test",
+            "category": "Outro",
+            "action_required": False,
+            "suggestions": [],
+        })
+        with patch.object(analyzer.ai_client, 'generate', new_callable=AsyncMock) as mock:
+            mock.side_effect = [incomplete, _VALID_RESPONSE]
+
+            result = await analyzer.analyze(sample_produtivo_email)
+
+        assert result["priority"] == "normal"
+        assert mock.await_count == 2
+        repair_prompt = mock.await_args_list[1].args[0]
+        assert "priority" in repair_prompt
+        assert incomplete not in repair_prompt
+
+    @pytest.mark.asyncio
+    async def test_analyze_does_not_cache_after_repairs_are_exhausted(self, analyzer, sample_produtivo_email):
+        invalid = "This is not JSON at all"
+        with patch.object(analyzer.ai_client, 'generate', new_callable=AsyncMock) as mock:
+            mock.return_value = invalid
+            with pytest.raises(InvalidAIResponseError):
+                await analyzer.analyze(sample_produtivo_email)
+
+            mock.return_value = _VALID_RESPONSE
+            result = await analyzer.analyze(sample_produtivo_email)
+
+        assert result["priority"] == "normal"
+        assert mock.await_count == (MAX_REPAIRS + 1) + 1
 
     @pytest.mark.asyncio
     async def test_analyze_missing_summary_raises_error(self, analyzer, sample_produtivo_email):
@@ -142,7 +189,8 @@ class TestEmailAnalyzer:
             with pytest.raises(InvalidAIResponseError, match="resposta inválida"):
                 await analyzer.analyze(sample_produtivo_email)
 
-        mock.assert_awaited_once()
+        assert mock.await_count == MAX_REPAIRS + 1
+        assert wrapped not in mock.await_args_list[1].args[0]
 
     @pytest.mark.asyncio
     async def test_analyze_cache_hit_skips_second_ai_call(self, analyzer, sample_produtivo_email):
