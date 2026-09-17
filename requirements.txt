@@ -6,7 +6,7 @@ pydantic-settings==2.5.2
 
 httpx==0.27.2 # Cliente HTTP moderno (melhor que requests, suporta async)
 
-openai==1.51.2
+openai==3.13.0
 
 python-dotenv==1.2.2
 
